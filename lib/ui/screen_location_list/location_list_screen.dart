@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:location_tracking_flutter/ui/screen_location_list/location_data_manager.dart';
 import 'package:location_tracking_flutter/model/model_location_data.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:location_tracking_flutter/ui/screen_add_location/add_location_screen.dart';
 
 class LocationListScreen extends StatefulWidget {
   const LocationListScreen({super.key});
@@ -117,7 +118,7 @@ class _LocationListScreenState extends State<LocationListScreen> {
                 (isGranted) {
                   if (!context.mounted) return;
                   if (isGranted) {
-                    toNavigate(context, widget);
+                    toNavigate(context, AddLocationScreen());
                     showSnackBar(context, permissionGranted);
                   } else {
                     showSnackBar(context, permissionDenied);
