@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:location_tracking_flutter/ui/screen_add_location/add_location_screen.dart';
 import 'package:location_tracking_flutter/utils/colors.dart';
 import 'package:location_tracking_flutter/utils/constants.dart';
 import 'package:location_tracking_flutter/utils/custom/custom_btn.dart';
@@ -25,7 +26,7 @@ class _LocationListScreenState extends State<LocationListScreen> {
         actions: [
           GestureDetector(
             onTap: () {
-              toNavigate(context, widget);
+              toNavigate(context, AddLocationScreen());
             },
             child: Padding(
               padding: const EdgeInsets.fromLTRB(0, 0, 10, 0),
