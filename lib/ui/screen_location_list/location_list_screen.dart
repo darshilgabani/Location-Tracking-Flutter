@@ -39,22 +39,24 @@ class _LocationListScreenState extends State<LocationListScreen> {
           )
         ],
       ),
-      body: Column(
-        children: const [
-          Expanded(
-            child: SingleChildScrollView(
-                child: Column(
-              children: [],
-            )),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-              child: CustomButton(btnName: lblStartBtn),
+      body: SafeArea(
+        child: Column(
+          children: const [
+            Expanded(
+              child: SingleChildScrollView(
+                  child: Column(
+                children: [],
+              )),
             ),
-          ),
-        ],
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
+                child: CustomButton(btnName: lblStartBtn),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

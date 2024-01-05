@@ -3,6 +3,10 @@
         android:label="location_tracking_flutter"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <meta-data android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyClddgVL7ZHLcjNrXy6_VRdH0BHR9F_XIs"/>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -1,15 +1,16 @@
 # location_tracking_flutter
 
-A new Flutter project.
-
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+This is Location Tracking project using Flutter.
 
 A few resources to get you started if this is your first Flutter project:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- Google Map Api Key: AIzaSyClddgVL7ZHLcjNrXy6_VRdH0BHR9F_XIs
+
+A few command to run in your terminal to start this project in your system:
+
+- Run project in release mode : flutter run --release
 
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
