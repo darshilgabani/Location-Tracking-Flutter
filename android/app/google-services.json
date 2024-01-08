@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "340919076694",
+    "project_id": "location-tracking-flutter",
+    "storage_bucket": "location-tracking-flutter.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:340919076694:android:5fabc21256000707cff8f7",
+        "android_client_info": {
+          "package_name": "com.biz.locationtracking.location_tracking_flutter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCu3iZ-IExIEIiMvseLIObNyfspl0imSnY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

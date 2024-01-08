@@ -56,8 +56,8 @@ class _LocationListScreenState extends State<LocationListScreen> {
             Expanded(
               child: SingleChildScrollView(
                   child: Column(
-                    children: [],
-                  )),
+                children: [],
+              )),
             ),
             Align(
               alignment: Alignment.bottomCenter,

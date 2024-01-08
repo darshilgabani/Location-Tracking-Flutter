@@ -8,6 +8,7 @@ class CustomButton extends StatelessWidget {
   final Color textColor;
   final bool isBtnEnable;
   final bool isPaddingEnable;
+  final double width;
   final VoidCallback? callback;
 
   const CustomButton(
@@ -18,6 +19,7 @@ class CustomButton extends StatelessWidget {
       this.callback,
       this.isBtnEnable = true,
       this.isPaddingEnable = true,
+      this.width = double.infinity,
       this.textColor = textWhiteColor});
 
   @override
@@ -26,7 +28,7 @@ class CustomButton extends StatelessWidget {
         ? Padding(
             padding: EdgeInsets.all(isPaddingEnable ? 8.0 : 0),
             child: SizedBox(
-              width: double.infinity,
+              width: width,
               height: 45,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -47,7 +49,7 @@ class CustomButton extends StatelessWidget {
         : Padding(
             padding: EdgeInsets.all(isPaddingEnable ? 8.0 : 0),
             child: SizedBox(
-              width: double.infinity,
+              width: width,
               height: 45,
               child: ElevatedButton(
                   onPressed: () {},

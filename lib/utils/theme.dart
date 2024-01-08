@@ -6,6 +6,7 @@ ThemeData appThemeData = ThemeData(
   splashColor: Colors.transparent,
   highlightColor: Colors.transparent,
   useMaterial3: true,
+  textSelectionTheme: TextSelectionThemeData(cursorColor: themeDarkOrangeColor, selectionColor: themeOrangeColor)
 );
 
 TextStyle appBarTextStyle = TextStyle(color: textWhiteColor);
