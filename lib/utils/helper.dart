@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:location_tracking_flutter/ui/screen_add_location/model/model_device_info.dart';
+import 'package:location_tracking_flutter/model/model_device_info.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void toNavigate(BuildContext context, Widget widget) {
