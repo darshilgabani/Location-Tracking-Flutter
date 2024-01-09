@@ -7,3 +7,10 @@ const String lblCheckoutBtn = "Check out";
 
 const String permissionGranted = "Location Permission Granted!";
 const String permissionDenied = "Location Permission Denied!";
+
+const String updateDeleteDialogTitle = "Update or Delete Location";
+const String updateDeleteDialogHintText = "Enter Location tag name here!";
+const String updateDeleteDialogCancelBtn = "Cancel";
+const String updateDeleteDialogUpdateBtn = "Update";
+const String updateDeleteDialogDeleteBtn = "Delete";
+const String updateDeleteDialogEmptyTextError = "Please Enter location tag!";
