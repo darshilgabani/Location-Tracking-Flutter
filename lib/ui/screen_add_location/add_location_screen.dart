@@ -4,8 +4,8 @@ import 'package:location/location.dart';
 import 'package:location_tracking_flutter/utils/colors.dart';
 import 'package:location_tracking_flutter/utils/constants.dart';
 import 'package:location_tracking_flutter/utils/theme.dart';
-import 'package:location_tracking_flutter/ui/screen_add_location/model/model_device_info.dart';
-import 'package:location_tracking_flutter/ui/screen_add_location/model/model_location_data.dart';
+import 'package:location_tracking_flutter/model/model_device_info.dart';
+import 'package:location_tracking_flutter/model/model_location_data.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:location_tracking_flutter/utils/custom/circular_progress.dart';
 import 'package:location_tracking_flutter/utils/custom/custom_btn.dart';
@@ -33,6 +33,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   void initState() {
     super.initState();
     getCurrentLocation();
+    getLocationData();
   }
 
   @override
@@ -159,8 +160,9 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     if (markerList.length >= 2) {
       isBtnEnable = true;
     }
-    locationDataList.add(
-        LocationDataModel(index.toString(), locationTag, latLng.toString()));
+    String latLngString = "${latLng.latitude},${latLng.longitude}";
+    locationDataList
+        .add(LocationDataModel(index.toString(), locationTag, latLngString));
     setState(() {});
   }
 
@@ -201,5 +203,46 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     } catch (e) {
       print('Error submitting data: $e');
     }
+  }
+
+  getLocationData() {
+    database.onValue.listen((event) async {
+      final data = event.snapshot.value as Map;
+      DeviceInfo deviceInfo = await getDeviceIdAndType();
+      String deviceType = deviceInfo.deviceType;
+      String? deviceId = deviceInfo.deviceId;
+      print(data);
+
+      if (deviceType != 'Unknown' && deviceId != null) {
+        final userLocationData = data[deviceType] as Map<dynamic, dynamic>;
+        userLocationData.forEach((key, value) {
+          if (key == deviceId) {
+            final locations = value as List<dynamic>;
+            locations.asMap().forEach((index, location) {
+              String latLngString = location['LatLng'];
+              String locationTag = location['Location_Tag'];
+              locationDataList.add(LocationDataModel(
+                  index.toString(), locationTag, latLngString));
+
+              List<String> latLngList = latLngString.split(',');
+              double latitude = double.parse(latLngList[0]);
+              double longitude = double.parse(latLngList[1]);
+
+              markerList.add(Marker(
+                  markerId: MarkerId("markerId$index"),
+                  icon: BitmapDescriptor.defaultMarkerWithHue(
+                      BitmapDescriptor.hueOrange),
+                  infoWindow: InfoWindow(title: locationTag),
+                  position: LatLng(latitude, longitude)));
+
+              if (markerList.length >= 2) {
+                isBtnEnable = true;
+              }
+            });
+            setState(() {});
+          }
+        });
+      }
+    });
   }
 }
