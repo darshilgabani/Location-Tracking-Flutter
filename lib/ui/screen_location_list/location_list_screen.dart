@@ -6,7 +6,7 @@ import 'package:location_tracking_flutter/utils/custom/custom_btn.dart';
 import 'package:location_tracking_flutter/utils/helper.dart';
 import 'package:location_tracking_flutter/utils/theme.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:location_tracking_flutter/model/model_device_info.dart';
+import 'package:location_tracking_flutter/ui/screen_location_list/location_data_manager.dart';
 import 'package:location_tracking_flutter/model/model_location_data.dart';
 import 'package:firebase_database/firebase_database.dart';
 
@@ -19,13 +19,20 @@ class LocationListScreen extends StatefulWidget {
 
 class _LocationListScreenState extends State<LocationListScreen> {
   DatabaseReference database = FirebaseDatabase.instance.ref();
-
+  final TextEditingController _textEditingController = TextEditingController();
   List<LocationDataModel> locationDataList = [];
+  LocationDataManager locationDataManager = LocationDataManager();
 
   @override
   void initState() {
     super.initState();
-    getLocationData();
+    locationDataManager.getLocationData().then(
+      (value) {
+        setState(() {
+          locationDataList.addAll(value);
+        });
+      },
+    );
   }
 
   @override
@@ -35,15 +42,41 @@ class _LocationListScreenState extends State<LocationListScreen> {
         Card(
           key: Key('$index'),
           color: themeShadeOfOrangeColor,
-          child: SizedBox(
-            height: 60,
-            child: Center(
-              child: Text(
-                  '${index + 1}. ${locationDataList[index].locationTag}',
-                  style: TextStyle(
-                      fontSize: 20,
-                      color: themeOrangeColor,
-                      fontWeight: FontWeight.bold)),
+          child: GestureDetector(
+            onTap: () {
+              final LocationDataModel locationDataModel =
+                  locationDataList[index];
+              showUpdateDeleteLocationDialog(locationDataModel, index);
+            },
+            child: SizedBox(
+              height: 60,
+              child: Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(15, 0, 0, 0),
+                    child: Draggable(
+                      feedback: Icon(Icons.drag_indicator_rounded,
+                          color: Colors.grey),
+                      data: index,
+                      child: Icon(Icons.drag_indicator_rounded,
+                          color: Colors.grey),
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(15, 0, 0, 0),
+                      child: Text(
+                        '${index + 1}. ${locationDataList[index].locationTag}',
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: themeOrangeColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -120,6 +153,12 @@ class _LocationListScreenState extends State<LocationListScreen> {
                         locationDataList.removeAt(oldIndex);
                     locationDataList.insert(newIndex, item);
                   });
+                  locationDataManager.updateDraggedCardIndex(
+                    locationDataList,
+                    () {
+                      setState(() {});
+                    },
+                  );
                 },
               ),
             ),
@@ -136,29 +175,100 @@ class _LocationListScreenState extends State<LocationListScreen> {
     );
   }
 
-  getLocationData() {
-    database.onValue.listen((event) async {
-      final data = event.snapshot.value as Map;
-      DeviceInfo deviceInfo = await getDeviceIdAndType();
-      String deviceType = deviceInfo.deviceType;
-      String? deviceId = deviceInfo.deviceId;
-      print(data);
+  showUpdateDeleteLocationDialog(
+      LocationDataModel locationDataModel, int index) {
+    final elevatedButtonStyle = ElevatedButton.styleFrom(
+      backgroundColor: themeOrangeColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+    );
 
-      if (deviceType != 'Unknown' && deviceId != null) {
-        final userLocationData = data[deviceType] as Map<dynamic, dynamic>;
-        userLocationData.forEach((key, value) {
-          if (key == deviceId) {
-            final locations = value as List<dynamic>;
-            locations.asMap().forEach((index, location) {
-              String latLng = location['LatLng'];
-              String locationTag = location['Location_Tag'];
-              locationDataList.add(
-                  LocationDataModel(index.toString(), locationTag, latLng));
-            });
-            setState(() {});
-          }
-        });
-      }
-    });
+    final textStyle = TextStyle(color: themeWhiteColor);
+
+    _textEditingController.text = locationDataModel.locationTag!;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: themeShadeOfOrangeColor,
+          title: Text(updateDeleteDialogTitle,
+              style: TextStyle(
+                  color: themeOrangeColor, fontWeight: FontWeight.bold)),
+          content: TextField(
+            controller: _textEditingController,
+            cursorColor: themeOrangeColor,
+            decoration: InputDecoration(
+              hintText: updateDeleteDialogHintText,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10.0),
+                borderSide: BorderSide(color: themeOrangeColor, width: 2),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10.0),
+                borderSide: BorderSide(color: themeOrangeColor, width: 2),
+              ),
+            ),
+          ),
+          actions: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                ElevatedButton(
+                    style: elevatedButtonStyle,
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(
+                      updateDeleteDialogCancelBtn,
+                      style: textStyle,
+                    )),
+                ElevatedButton(
+                    style: elevatedButtonStyle,
+                    onPressed: () {
+                      locationDataManager.deleteLocationData(
+                        locationDataModel,
+                        locationDataList,
+                        index,
+                        () {
+                          Navigator.of(context).pop();
+                          setState(() {});
+                        },
+                      );
+                    },
+                    child: Text(
+                      updateDeleteDialogDeleteBtn,
+                      style: textStyle,
+                    )),
+                ElevatedButton(
+                    style: elevatedButtonStyle,
+                    onPressed: () {
+                      String updatedLocationTag = _textEditingController.text;
+                      if (updatedLocationTag != "") {
+                        locationDataManager.updateLocationTagName(
+                          locationDataList,
+                          updatedLocationTag,
+                          index,
+                          () {
+                            Navigator.of(context).pop();
+                            setState(() {});
+                          },
+                        );
+                      } else {
+                        showSnackBar(context, updateDeleteDialogEmptyTextError);
+                      }
+                    },
+                    child: Text(
+                      updateDeleteDialogUpdateBtn,
+                      style: textStyle,
+                    )),
+              ],
+            )
+          ],
+        );
+      },
+    );
   }
 }
