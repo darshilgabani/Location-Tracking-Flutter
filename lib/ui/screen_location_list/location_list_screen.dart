@@ -214,56 +214,64 @@ class _LocationListScreenState extends State<LocationListScreen> {
           ),
           actions: <Widget>[
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                ElevatedButton(
-                    style: elevatedButtonStyle,
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Text(
-                      updateDeleteDialogCancelBtn,
-                      style: textStyle,
-                    )),
-                ElevatedButton(
-                    style: elevatedButtonStyle,
-                    onPressed: () {
-                      locationDataManager.deleteLocationData(
-                        locationDataModel,
-                        locationDataList,
-                        index,
-                        () {
-                          Navigator.of(context).pop();
-                          setState(() {});
-                        },
-                      );
-                    },
-                    child: Text(
-                      updateDeleteDialogDeleteBtn,
-                      style: textStyle,
-                    )),
-                ElevatedButton(
-                    style: elevatedButtonStyle,
-                    onPressed: () {
-                      String updatedLocationTag = _textEditingController.text;
-                      if (updatedLocationTag != "") {
-                        locationDataManager.updateLocationTagName(
+                Expanded(
+                  child: ElevatedButton(
+                      style: elevatedButtonStyle,
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: Text(
+                        updateDeleteDialogCancelBtn,
+                        style: textStyle,
+                      )),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                      style: elevatedButtonStyle,
+                      onPressed: () {
+                        locationDataManager.deleteLocationData(
+                          locationDataModel,
                           locationDataList,
-                          updatedLocationTag,
                           index,
                           () {
                             Navigator.of(context).pop();
                             setState(() {});
                           },
                         );
-                      } else {
-                        showSnackBar(context, updateDeleteDialogEmptyTextError);
-                      }
-                    },
-                    child: Text(
-                      updateDeleteDialogUpdateBtn,
-                      style: textStyle,
-                    )),
+                      },
+                      child: Text(
+                        updateDeleteDialogDeleteBtn,
+                        style: textStyle,
+                      )),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                      style: elevatedButtonStyle,
+                      onPressed: () {
+                        String updatedLocationTag = _textEditingController.text;
+                        if (updatedLocationTag != "") {
+                          locationDataManager.updateLocationTagName(
+                            locationDataList,
+                            updatedLocationTag,
+                            index,
+                            () {
+                              Navigator.of(context).pop();
+                              setState(() {});
+                            },
+                          );
+                        } else {
+                          showSnackBar(context, updateDeleteDialogEmptyTextError);
+                        }
+                      },
+                      child: Text(
+                        updateDeleteDialogUpdateBtn,
+                        style: textStyle,
+                      )),
+                ),
               ],
             )
           ],
