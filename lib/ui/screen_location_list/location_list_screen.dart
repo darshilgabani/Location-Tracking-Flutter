@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:location_tracking_flutter/ui/screen_location_list/location_data_manager.dart';
 import 'package:location_tracking_flutter/model/model_location_data.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:location_tracking_flutter/ui/screen_location_tracking/location_tracking_screen.dart';
 
 class LocationListScreen extends StatefulWidget {
   const LocationListScreen({super.key});
@@ -166,7 +167,17 @@ class _LocationListScreenState extends State<LocationListScreen> {
               alignment: Alignment.bottomCenter,
               child: Padding(
                 padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                child: CustomButton(btnName: lblStartBtn),
+                child: CustomButton(
+                  btnName: lblStartBtn,
+                  callback: () {
+                    checkLocationPermission(
+                      context,
+                      () {
+                        toNavigate(context, LocationTrackingScreen());
+                      },
+                    );
+                  },
+                ),
               ),
             ),
           ],
@@ -278,5 +289,19 @@ class _LocationListScreenState extends State<LocationListScreen> {
         );
       },
     );
+  }
+
+  Future<bool> checkPermission(PermissionWithService permissionType) async {
+    final permissionGranted = await permissionType.status;
+    var isGranted = false;
+    if (permissionGranted == PermissionStatus.denied) {
+      var permission = await permissionType.request();
+      isGranted = (permission == PermissionStatus.granted);
+    } else if (permissionGranted == PermissionStatus.granted) {
+      isGranted = true;
+    } else if (permissionGranted == PermissionStatus.permanentlyDenied) {
+      openAppSettings();
+    }
+    return isGranted;
   }
 }
