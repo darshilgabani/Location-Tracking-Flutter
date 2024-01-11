@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -33,8 +34,13 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
   List<Marker> markerList = [];
   List<LocationDataModel> locationDataList = [];
   List<LatLng> polyline = [];
+  List<LatLng> remainPolyline = [];
   bool isBtnEnable = false;
+  List<Circle> circleList = [];
+  bool isSportCheckInBtnEnable = false;
   bool isLoading = false;
+  int destinationLocationIndex = 0;
+  int checkedInDestinationIndex = 0;
 
   @override
   void initState() {
@@ -73,6 +79,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                       _controller.complete(controller);
                     },
                     markers: Set<Marker>.of(markerList),
+                    circles: Set<Circle>.of(circleList),
                     zoomControlsEnabled: true,
                     myLocationEnabled: true,
                     myLocationButtonEnabled: false,
@@ -81,12 +88,28 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                 bottom: 15,
                 left: 15,
                 right: 15,
-                child: CustomButton(
-                  btnName: lblCheckoutBtn,
-                  isBtnEnable: isBtnEnable,
-                  callback: () {
-                    onCheckOutBtnClick();
-                  },
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        btnName: lblSportCheckInBtn,
+                        isBtnEnable: isSportCheckInBtnEnable,
+                        isPaddingEnable: false,
+                        callback: () {
+                          onSportCheckInBtnClick();
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: CustomButton(
+                        btnName: lblCheckoutBtn,
+                        isBtnEnable: isBtnEnable,
+                        callback: () {
+                          onCheckOutBtnClick();
+                        },
+                      ),
+                    ),
+                  ],
                 )),
             if (isLoading == true) CircularProgress()
           ],
@@ -117,7 +140,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
         DeviceInfo deviceInfo = await getDeviceIdAndType();
         String deviceType = deviceInfo.deviceType;
         String? deviceId = deviceInfo.deviceId;
-
+        print("Device Id: $deviceId");
         if (deviceType != 'Unknown' && deviceId != null) {
           final userLocationData = data[deviceType] as Map<dynamic, dynamic>;
           userLocationData.forEach((key, value) {
@@ -138,7 +161,8 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                   backgroundLocationService();
                 }
 
-                polyline.insert(index + 1, LatLng(latitude, longitude));
+                remainPolyline.insert(index, LatLng(latitude, longitude));
+                polyline.addAll(remainPolyline);
 
                 markerList.add(Marker(
                     markerId: MarkerId("markerId$index"),
@@ -146,6 +170,14 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                         BitmapDescriptor.hueOrange),
                     infoWindow: InfoWindow(title: locationTag),
                     position: LatLng(latitude, longitude)));
+
+                circleList.add(Circle(
+                    circleId: CircleId("circleId$index"),
+                    center: LatLng(latitude, longitude),
+                    radius: 100,
+                    fillColor: mapCircleFillColor,
+                    strokeColor: mapCircleStrokeColor,
+                    strokeWidth: 1));
               });
               setState(() {});
             }
@@ -157,10 +189,9 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
 
   backgroundLocationService() {
     locationSubscription = location.onLocationChanged.listen((newLocation) {
-      polyline.clear();
+      // polyline.clear();
       currentLocation = newLocation;
       updateMapAndPolyline(newLocation);
-
       print("@@##$newLocation");
     });
   }
@@ -172,26 +203,65 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
             target: LatLng(newLocation.latitude!, newLocation.longitude!),
             zoom: 16)));
 
-    if (destination != null) {
-      List<LatLng> remainPolyline = [];
-      remainPolyline.insert(
-          0, LatLng(currentLocation!.latitude!, currentLocation!.longitude!));
-      remainPolyline.insert(1, destination!);
-      setState(() {
-        polyline.addAll(remainPolyline);
-      });
-    }
+    updateLiveLocation();
 
     final distance = LocationTrackingManager().distanceBetweenCoordinates(
         newLocation.latitude!,
         newLocation.longitude!,
         destination!.latitude,
         destination!.longitude);
+
     print("Distance: $distance");
+
     if (distance <= 100) {
+      circleList.removeAt(0);
+
+      if (destinationLocationIndex < remainPolyline.length) {
+        final locationDataModel =
+            locationDataList.elementAt(destinationLocationIndex + 1);
+        print(locationDataModel);
+
+        String? latLngString = locationDataModel.latLng;
+        List<String> latLngList = latLngString!.split(',');
+        double latitude = double.parse(latLngList[0]);
+        double longitude = double.parse(latLngList[1]);
+
+        destination = LatLng(latitude, longitude);
+
+        polyline.clear();
+        polyline.insert(
+            0, LatLng(currentLocation!.latitude!, currentLocation!.longitude!));
+
+        if (destinationLocationIndex == 0) {
+          destinationLocationIndex++;
+          remainPolyline.removeAt(0);
+        } else {
+          remainPolyline.removeRange(0, destinationLocationIndex);
+          destinationLocationIndex++;
+        }
+
+        polyline.addAll(remainPolyline);
+      } else {
+        destinationLocationIndex++;
+        polyline.clear();
+      }
+
       setState(() {
-        isBtnEnable = true;
+        isSportCheckInBtnEnable = true;
       });
+    } else {
+      setState(() {
+        isSportCheckInBtnEnable = false;
+      });
+    }
+  }
+
+  updateLiveLocation() {
+    if (destination != null) {
+      polyline.removeAt(0);
+      polyline.insert(
+          0, LatLng(currentLocation!.latitude!, currentLocation!.longitude!));
+      setState(() {});
     }
   }
 
@@ -200,8 +270,25 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
     if (isBackgroundModeEnabled) {
       location.enableBackgroundMode(enable: false);
       locationSubscription?.cancel();
-      if(!mounted) return;
+      if (!mounted) return;
       Navigator.pop(context);
     }
+  }
+
+  onSportCheckInBtnClick() {
+    final locationDataModel = locationDataList[destinationLocationIndex-1];
+    String? latLngString = locationDataModel.latLng;
+    String? locationTag = locationDataModel.locationTag;
+    List<String> latLngList = latLngString!.split(',');
+    double latitude = double.parse(latLngList[0]);
+    double longitude = double.parse(latLngList[1]);
+
+    markerList.add(Marker(
+        markerId: MarkerId("markerId${destinationLocationIndex-1}"),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: InfoWindow(title: locationTag),
+        position: LatLng(latitude, longitude)));
+    checkedInDestinationIndex++;
+    setState(() {});
   }
 }

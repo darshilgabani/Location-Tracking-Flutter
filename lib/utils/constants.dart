@@ -5,6 +5,7 @@ const String titleLocationTrackingScreen = "Location Tracking";
 const String lblStartBtn = "Start Tracking";
 const String lblAddBtn = "Add";
 const String lblCheckoutBtn = "Check out";
+const String lblSportCheckInBtn = "Sport CheckIn";
 
 const String permissionGranted = "Location Permission Granted!";
 const String permissionDenied = "Location Permission Denied!";
