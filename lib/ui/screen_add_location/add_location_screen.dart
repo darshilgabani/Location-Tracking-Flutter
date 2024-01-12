@@ -157,12 +157,12 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
         infoWindow: InfoWindow(title: locationTag),
         position: latLng));
-    if (markerList.length >= 2) {
+    if (markerList.isNotEmpty) {
       isBtnEnable = true;
     }
     String latLngString = "${latLng.latitude},${latLng.longitude}";
-    locationDataList
-        .add(LocationDataModel(index.toString(), locationTag, latLngString));
+    locationDataList.add(
+        LocationDataModel(index.toString(), locationTag, latLngString, false));
     setState(() {});
   }
 
@@ -178,6 +178,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
         var object = {
           "LatLng": item.latLng,
           "Location_Tag": item.locationTag,
+          "Worked_Done": item.isWorkedDone,
         };
         locationDataObject[item.markerId!] = object;
       }
@@ -206,43 +207,46 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
   }
 
   getLocationData() {
-    database.onValue.listen((event) async {
-      final data = event.snapshot.value as Map;
-      DeviceInfo deviceInfo = await getDeviceIdAndType();
-      String deviceType = deviceInfo.deviceType;
-      String? deviceId = deviceInfo.deviceId;
-      print(data);
+    database.once().then(
+      (event) async {
+        final data = event.snapshot.value as Map;
+        DeviceInfo deviceInfo = await getDeviceIdAndType();
+        String deviceType = deviceInfo.deviceType;
+        String? deviceId = deviceInfo.deviceId;
+        print(data);
 
-      if (deviceType != 'Unknown' && deviceId != null) {
-        final userLocationData = data[deviceType] as Map<dynamic, dynamic>;
-        userLocationData.forEach((key, value) {
-          if (key == deviceId) {
-            final locations = value as List<dynamic>;
-            locations.asMap().forEach((index, location) {
-              String latLngString = location['LatLng'];
-              String locationTag = location['Location_Tag'];
-              locationDataList.add(LocationDataModel(
-                  index.toString(), locationTag, latLngString));
+        if (deviceType != 'Unknown' && deviceId != null) {
+          final userLocationData = data[deviceType] as Map<dynamic, dynamic>;
+          userLocationData.forEach((key, value) {
+            if (key == deviceId) {
+              final locations = value as List<dynamic>;
+              locations.asMap().forEach((index, location) {
+                String latLngString = location['LatLng'];
+                String locationTag = location['Location_Tag'];
+                bool isWorkedDone = location['Worked_Done'];
+                locationDataList.add(LocationDataModel(
+                    index.toString(), locationTag, latLngString, isWorkedDone));
 
-              List<String> latLngList = latLngString.split(',');
-              double latitude = double.parse(latLngList[0]);
-              double longitude = double.parse(latLngList[1]);
+                List<String> latLngList = latLngString.split(',');
+                double latitude = double.parse(latLngList[0]);
+                double longitude = double.parse(latLngList[1]);
 
-              markerList.add(Marker(
-                  markerId: MarkerId("markerId$index"),
-                  icon: BitmapDescriptor.defaultMarkerWithHue(
-                      BitmapDescriptor.hueOrange),
-                  infoWindow: InfoWindow(title: locationTag),
-                  position: LatLng(latitude, longitude)));
+                markerList.add(Marker(
+                    markerId: MarkerId("markerId$index"),
+                    icon: BitmapDescriptor.defaultMarkerWithHue(
+                        BitmapDescriptor.hueOrange),
+                    infoWindow: InfoWindow(title: locationTag),
+                    position: LatLng(latitude, longitude)));
 
-              if (markerList.length >= 2) {
-                isBtnEnable = true;
-              }
-            });
-            setState(() {});
-          }
-        });
-      }
-    });
+                if (markerList.isNotEmpty) {
+                  isBtnEnable = true;
+                }
+              });
+              setState(() {});
+            }
+          });
+        }
+      },
+    );
   }
 }
