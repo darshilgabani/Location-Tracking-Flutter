@@ -350,8 +350,27 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
         .update(userDataObject)
         .whenComplete(
       () {
+        submitWorkDoneStatus(sportIndex);
+      },
+    );
+  }
+
+  submitWorkDoneStatus(int sportIndex) async {
+    var prefs = await SharedPreferences.getInstance();
+    DeviceInfo? deviceInfo = await getDeviceIdAndType();
+    String? deviceId = deviceInfo.deviceId;
+    String deviceType = deviceInfo.deviceType;
+
+    await database
+        .child(deviceType.toString())
+        .child(deviceId.toString())
+        .child(sportIndex.toString())
+        .child("Worked_Done")
+        .set(true)
+        .whenComplete(
+      () {
         prefs.clear();
-        if(sportIndex == locationDataList.length-1){
+        if (sportIndex == locationDataList.length - 1) {
           isCheckOutBtnEnable = true;
         }
         isSportCheckOutBtnEnable = false;
