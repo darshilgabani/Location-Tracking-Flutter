@@ -24,8 +24,9 @@ class LocationDataManager {
             locations.asMap().forEach((index, location) {
               String latLng = location['LatLng'];
               String locationTag = location['Location_Tag'];
-              locationDataList.add(
-                  LocationDataModel(index.toString(), locationTag, latLng));
+              bool isWorkedDone = location['Worked_Done'];
+              locationDataList.add(LocationDataModel(
+                  index.toString(), locationTag, latLng, isWorkedDone));
             });
           }
         });
@@ -99,6 +100,7 @@ class LocationDataManager {
           currentLocationData.markerId,
           updatedLocationTag,
           currentLocationData.latLng,
+          currentLocationData.isWorkedDone
         );
         locationDataList[index] = updatedLocationData;
         callback.call();
