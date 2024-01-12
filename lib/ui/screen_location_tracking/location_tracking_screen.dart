@@ -159,8 +159,9 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
               locations.asMap().forEach((index, location) {
                 String latLngString = location['LatLng'];
                 String locationTag = location['Location_Tag'];
+                bool isWorkedDone = location['Worked_Done'];
                 locationDataList.add(LocationDataModel(
-                    index.toString(), locationTag, latLngString));
+                    index.toString(), locationTag, latLngString,isWorkedDone));
 
                 List<String> latLngList = latLngString.split(',');
                 double latitude = double.parse(latLngList[0]);
