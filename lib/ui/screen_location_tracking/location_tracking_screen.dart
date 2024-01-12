@@ -13,6 +13,7 @@ import 'package:location_tracking_flutter/utils/custom/circular_progress.dart';
 import 'package:location_tracking_flutter/utils/custom/custom_btn.dart';
 import 'package:location_tracking_flutter/utils/helper.dart';
 import 'package:location_tracking_flutter/utils/theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LocationTrackingScreen extends StatefulWidget {
   const LocationTrackingScreen({super.key});
@@ -29,18 +30,19 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
 
   Location location = Location();
   LatLng? destination;
+  String? deviceId;
   LocationData? currentLocation;
   CameraPosition? initialCameraPosition;
   List<Marker> markerList = [];
   List<LocationDataModel> locationDataList = [];
   List<LatLng> polyline = [];
   List<LatLng> remainPolyline = [];
-  bool isBtnEnable = false;
+  bool isCheckOutBtnEnable = false;
   List<Circle> circleList = [];
   bool isSportCheckInBtnEnable = false;
+  bool isSportCheckOutBtnEnable = false;
   bool isLoading = false;
   int destinationLocationIndex = 0;
-  int checkedInDestinationIndex = 0;
 
   @override
   void initState() {
@@ -92,18 +94,26 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                   children: [
                     Expanded(
                       child: CustomButton(
-                        btnName: lblSportCheckInBtn,
-                        isBtnEnable: isSportCheckInBtnEnable,
+                        btnName: isSportCheckInBtnEnable
+                            ? lblSportCheckInBtn
+                            : lblSportCheckOutBtn,
+                        isBtnEnable:
+                            isSportCheckInBtnEnable || isSportCheckOutBtnEnable,
                         isPaddingEnable: false,
                         callback: () {
-                          onSportCheckInBtnClick();
+                          // onSportCheckInBtnClick();
+                          if (isSportCheckInBtnEnable) {
+                            onSportCheckInBtnClick();
+                          } else if (isSportCheckOutBtnEnable) {
+                            onSportCheckOutBtnClick();
+                          }
                         },
                       ),
                     ),
                     Expanded(
                       child: CustomButton(
                         btnName: lblCheckoutBtn,
-                        isBtnEnable: isBtnEnable,
+                        isBtnEnable: isCheckOutBtnEnable,
                         callback: () {
                           onCheckOutBtnClick();
                         },
@@ -139,7 +149,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
         final data = event.snapshot.value as Map;
         DeviceInfo deviceInfo = await getDeviceIdAndType();
         String deviceType = deviceInfo.deviceType;
-        String? deviceId = deviceInfo.deviceId;
+        deviceId = deviceInfo.deviceId;
         print("Device Id: $deviceId");
         if (deviceType != 'Unknown' && deviceId != null) {
           final userLocationData = data[deviceType] as Map<dynamic, dynamic>;
@@ -189,7 +199,6 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
 
   backgroundLocationService() {
     locationSubscription = location.onLocationChanged.listen((newLocation) {
-      // polyline.clear();
       currentLocation = newLocation;
       updateMapAndPolyline(newLocation);
       print("@@##$newLocation");
@@ -249,10 +258,6 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
       setState(() {
         isSportCheckInBtnEnable = true;
       });
-    } else {
-      setState(() {
-        isSportCheckInBtnEnable = false;
-      });
     }
   }
 
@@ -275,8 +280,44 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
     }
   }
 
-  onSportCheckInBtnClick() {
-    final locationDataModel = locationDataList[destinationLocationIndex-1];
+  onSportCheckInBtnClick() async {
+    var prefs = await SharedPreferences.getInstance();
+    final sportIndex = destinationLocationIndex - 1;
+    final locationDataModel = locationDataList[sportIndex];
+    String? locationTag = locationDataModel.locationTag;
+
+    final checkedInTime = DateTime.now().microsecondsSinceEpoch;
+
+    prefs.setInt(checkedInTimeKey, checkedInTime);
+
+    Map<String, Object> userDataObject = {};
+
+    userDataObject = {
+      sportIndex.toString(): {
+        checkedInTimeKey: checkedInTime,
+        locationTagKey: locationTag,
+      }
+    };
+
+    await database
+        .child(userDbChildKey)
+        .child(deviceId!)
+        .update(userDataObject)
+        .whenComplete(
+      () {
+        setState(() {
+          isSportCheckInBtnEnable = false;
+          isSportCheckOutBtnEnable = true;
+        });
+        showSnackBar(context, checkedInSuccessMsg);
+      },
+    );
+  }
+
+  onSportCheckOutBtnClick() async {
+    var prefs = await SharedPreferences.getInstance();
+    final sportIndex = destinationLocationIndex - 1;
+    final locationDataModel = locationDataList[sportIndex];
     String? latLngString = locationDataModel.latLng;
     String? locationTag = locationDataModel.locationTag;
     List<String> latLngList = latLngString!.split(',');
@@ -284,11 +325,44 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
     double longitude = double.parse(latLngList[1]);
 
     markerList.add(Marker(
-        markerId: MarkerId("markerId${destinationLocationIndex-1}"),
+        markerId: MarkerId("markerId$sportIndex"),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
         infoWindow: InfoWindow(title: locationTag),
         position: LatLng(latitude, longitude)));
-    checkedInDestinationIndex++;
     setState(() {});
+
+    Map<String, Object> userDataObject = {};
+
+    final checkInTime = prefs.getInt(checkedInTimeKey);
+    final checkOutTime = DateTime.now().microsecondsSinceEpoch;
+    final duration = getTotalDuration(checkOutTime, checkInTime!);
+
+    userDataObject = {
+      checkedOutTimeKey: checkOutTime,
+      durationKey: duration.toString(),
+    };
+
+    await database
+        .child(userDbChildKey)
+        .child(deviceId!)
+        .child(sportIndex.toString())
+        .update(userDataObject)
+        .whenComplete(
+      () {
+        prefs.clear();
+        if(sportIndex == locationDataList.length-1){
+          isCheckOutBtnEnable = true;
+        }
+        isSportCheckOutBtnEnable = false;
+        showSnackBar(context, checkedOutSuccessMsg);
+        setState(() {});
+      },
+    );
+  }
+
+  Duration getTotalDuration(int time1, int time2) {
+    DateTime dateTime1 = DateTime.fromMillisecondsSinceEpoch(time1);
+    DateTime dateTime2 = DateTime.fromMillisecondsSinceEpoch(time2);
+    return dateTime1.difference(dateTime2);
   }
 }
