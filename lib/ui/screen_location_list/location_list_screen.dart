@@ -56,13 +56,8 @@ class _LocationListScreenState extends State<LocationListScreen> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(15, 0, 0, 0),
-                    child: Draggable(
-                      feedback: Icon(Icons.drag_indicator_rounded,
-                          color: Colors.grey),
-                      data: index,
-                      child: Icon(Icons.drag_indicator_rounded,
-                          color: Colors.grey),
-                    ),
+                    child: Icon(Icons.drag_indicator_rounded,
+                        color: Colors.grey),
                   ),
                   Expanded(
                     child: Padding(
@@ -76,6 +71,11 @@ class _LocationListScreenState extends State<LocationListScreen> {
                         ),
                       ),
                     ),
+                  ),
+                  if(locationDataList[index].isWorkedDone == true)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(15, 0, 20, 0),
+                    child: Icon(Icons.done_outline_sharp, color: Colors.green),
                   ),
                 ],
               ),
