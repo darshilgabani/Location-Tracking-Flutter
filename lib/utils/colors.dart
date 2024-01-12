@@ -14,3 +14,6 @@ const Color themeGreyColor = Color(0xFFCED1D9);
 const Color disableBtnColor = Color(0xFFF2F4F7);
 const Color disableBtnTextColor = Color(0xFF8C93A1);
 const Color textWhiteColor = themeWhiteColor;
+
+const Color mapCircleStrokeColor = Color(0xFF94B8E1);
+Color mapCircleFillColor = Colors.blue.shade100.withOpacity(0.5);
