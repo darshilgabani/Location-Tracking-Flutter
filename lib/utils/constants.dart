@@ -23,10 +23,15 @@ const String lblNotNowBtn = "Not Now";
 const String lblSettingsBtn = "Settings";
 
 const String userDbChildKey = "User Database";
+const String userIdleDbChildKey = "User Idle Database";
 const String checkedInTimeKey = "Checked_In_Time";
 const String checkedOutTimeKey = "Checked_Out_Time";
+const String lastActivityTimeKey = "Last_Activity_Time";
+const String dayCheckedInTimeKey = "Day_Checked_In_Time";
+const String dayCheckedOutTimeKey = "Day_Checked_Out_Time";
 const String locationTagKey = "Location_Tag";
-const String durationKey = "Duration";
+const String workDurationKey = "Worked_Duration";
+const String workDoneKey = "Worked_Done";
 const String checkedInSuccessMsg = "Checked In Successfully!";
 const String checkedOutSuccessMsg = "Checked Out Successfully!";
 

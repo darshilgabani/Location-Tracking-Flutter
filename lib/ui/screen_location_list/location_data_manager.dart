@@ -1,6 +1,7 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:location_tracking_flutter/model/model_device_info.dart';
 import 'package:location_tracking_flutter/model/model_location_data.dart';
+import 'package:location_tracking_flutter/utils/constants.dart';
 import 'package:location_tracking_flutter/utils/helper.dart';
 
 class LocationDataManager {
@@ -23,9 +24,10 @@ class LocationDataManager {
             final locations = value as List<dynamic>;
             locations.asMap().forEach((index, location) {
               String latLng = location['LatLng'];
-              String locationTag = location['Location_Tag'];
+              String locationTag = location[locationTagKey];
+              bool isWorkedDone = location[workDoneKey];
               locationDataList.add(
-                  LocationDataModel(index.toString(), locationTag, latLng));
+                  LocationDataModel(index.toString(), locationTag, latLng,isWorkedDone));
             });
           }
         });
@@ -99,6 +101,7 @@ class LocationDataManager {
           currentLocationData.markerId,
           updatedLocationTag,
           currentLocationData.latLng,
+          currentLocationData.isWorkedDone
         );
         locationDataList[index] = updatedLocationData;
         callback.call();
