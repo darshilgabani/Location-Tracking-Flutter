@@ -1,7 +1,10 @@
 import 'dart:math';
 
+import 'package:location_tracking_flutter/ui/screen_location_tracking/shared_preferences_helper.dart';
+import 'package:location_tracking_flutter/utils/constants.dart';
+
 class LocationTrackingManager {
-  double distanceBetweenCoordinates(
+  static double distanceBetweenCoordinates(
     double startLatitude,
     double startLongitude,
     double endLatitude,
@@ -22,5 +25,18 @@ class LocationTrackingManager {
 
   static _toRadians(double degree) {
     return degree * pi / 180;
+  }
+
+  static Duration getTotalDuration(int time1, int time2) {
+    DateTime dateTime1 = DateTime.fromMicrosecondsSinceEpoch(time1);
+    DateTime dateTime2 = DateTime.fromMicrosecondsSinceEpoch(time2);
+    return dateTime1.difference(dateTime2);
+  }
+
+  static Future<Duration> getSportIdleTime() async {
+    int? sportLastActivityTime = await SharedPreferencesHelper.getTime(sportLastActivityTimeKey);
+    int currentTime = DateTime.now().microsecondsSinceEpoch;
+    Duration idleSportDuration = getTotalDuration(currentTime, sportLastActivityTime!);
+    return idleSportDuration;
   }
 }

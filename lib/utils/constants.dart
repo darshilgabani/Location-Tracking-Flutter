@@ -34,5 +34,7 @@ const String workDurationKey = "Worked_Duration";
 const String workDoneKey = "Worked_Done";
 const String checkedInSuccessMsg = "Checked In Successfully!";
 const String checkedOutSuccessMsg = "Checked Out Successfully!";
+const String sportCheckedInTimeKey = "Sport_Checked_In_Time";
+const String sportLastActivityTimeKey = "Sport_Last_Activity_Time";
 
 

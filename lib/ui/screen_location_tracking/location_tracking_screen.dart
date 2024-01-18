@@ -44,6 +44,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
   bool isLoading = false;
   int destinationLocationIndex = 0;
   int sportIndex = 0;
+  bool destinationSet = false;
 
   @override
   void initState() {
@@ -79,6 +80,9 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                           color: themeOrangeColor,
                           width: 6)
                     },
+                    onTap: (argument) {
+                      onSportActivity();
+                    },
                     onMapCreated: (controller) {
                       _controller.complete(controller);
                     },
@@ -103,7 +107,6 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                             isSportCheckInBtnEnable || isSportCheckOutBtnEnable,
                         isPaddingEnable: false,
                         callback: () {
-                          // onSportCheckInBtnClick();
                           if (isSportCheckInBtnEnable) {
                             onSportCheckInBtnClick();
                           } else if (isSportCheckOutBtnEnable) {
@@ -169,12 +172,26 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                 double latitude = double.parse(latLngList[0]);
                 double longitude = double.parse(latLngList[1]);
 
-                if (index == 0) {
+                if (destinationSet == false && isWorkedDone == false) {
                   destination = LatLng(latitude, longitude);
                   backgroundLocationService();
+                  destinationSet = true;
+                } else if (isWorkedDone == true) {
+                  destinationLocationIndex++;
+                  sportIndex++;
                 }
 
-                remainPolyline.insert(index, LatLng(latitude, longitude));
+                if (isWorkedDone == false) {
+                  remainPolyline.add(LatLng(latitude, longitude));
+
+                  circleList.add(Circle(
+                      circleId: CircleId("circleId$index"),
+                      center: LatLng(latitude, longitude),
+                      radius: 100,
+                      fillColor: mapCircleFillColor,
+                      strokeColor: mapCircleStrokeColor,
+                      strokeWidth: 1));
+                }
                 polyline.addAll(remainPolyline);
 
                 markerList.add(Marker(
@@ -186,14 +203,6 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                             BitmapDescriptor.hueOrange),
                     infoWindow: InfoWindow(title: locationTag),
                     position: LatLng(latitude, longitude)));
-
-                circleList.add(Circle(
-                    circleId: CircleId("circleId$index"),
-                    center: LatLng(latitude, longitude),
-                    radius: 100,
-                    fillColor: mapCircleFillColor,
-                    strokeColor: mapCircleStrokeColor,
-                    strokeWidth: 1));
               });
               setState(() {});
             }
@@ -230,7 +239,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
     updateLiveLocation();
 
     if (destination != null) {
-      final distance = LocationTrackingManager().distanceBetweenCoordinates(
+      final distance = LocationTrackingManager.distanceBetweenCoordinates(
           newLocation.latitude!,
           newLocation.longitude!,
           destination!.latitude,
@@ -308,6 +317,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
 
     final checkedInTime = DateTime.now().microsecondsSinceEpoch;
     await SharedPreferencesHelper.submitTime(checkedInTimeKey);
+    await SharedPreferencesHelper.submitTime(sportCheckedInTimeKey);
 
     Map<String, Object> userDataObject = {};
 
@@ -345,6 +355,9 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
       await SharedPreferencesHelper.submitTime(dayCheckedOutTimeKey);
     }
 
+    Duration sportIdleTime = await LocationTrackingManager.getSportIdleTime();
+    print(sportIdleTime.inSeconds);
+
     markerList.add(Marker(
         markerId: MarkerId("markerId$sportIndex"),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
@@ -356,7 +369,8 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
 
     final checkInTime = await SharedPreferencesHelper.getTime(checkedInTimeKey);
     final checkOutTime = DateTime.now().microsecondsSinceEpoch;
-    final duration = getTotalDuration(checkOutTime, checkInTime!);
+    final duration =
+        LocationTrackingManager.getTotalDuration(checkOutTime, checkInTime!);
 
     userDataObject = {
       checkedOutTimeKey: checkOutTime,
@@ -408,7 +422,8 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
     final int? dayCheckedOutTime =
         await SharedPreferencesHelper.getTime(dayCheckedOutTimeKey);
 
-    final duration = getTotalDuration(dayCheckedOutTime!, dayCheckedInTime!);
+    final duration = LocationTrackingManager.getTotalDuration(
+        dayCheckedOutTime!, dayCheckedInTime!);
 
     final object = {
       deviceId!: {
@@ -434,9 +449,8 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
     });
   }
 
-  Duration getTotalDuration(int time1, int time2) {
-    DateTime dateTime1 = DateTime.fromMillisecondsSinceEpoch(time1);
-    DateTime dateTime2 = DateTime.fromMillisecondsSinceEpoch(time2);
-    return dateTime1.difference(dateTime2);
+  onSportActivity() async {
+    await SharedPreferencesHelper.submitTime(sportLastActivityTimeKey);
+    print("onSportActivitySubmitted");
   }
 }
