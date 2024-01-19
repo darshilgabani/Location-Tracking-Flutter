@@ -45,6 +45,8 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
   int destinationLocationIndex = 0;
   int sportIndex = 0;
   bool destinationSet = false;
+  bool isSportCheckedIn = false;
+  int sportIdleIndex = 0;
 
   @override
   void initState() {
@@ -81,7 +83,9 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                           width: 6)
                     },
                     onTap: (argument) {
-                      onSportActivity();
+                      if (isSportCheckedIn == true) {
+                        onSportActivity();
+                      }
                     },
                     onMapCreated: (controller) {
                       _controller.complete(controller);
@@ -165,12 +169,29 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                 String latLngString = location['LatLng'];
                 String locationTag = location[locationTagKey];
                 bool isWorkedDone = location[workDoneKey];
+                bool isCheckedIn = location[checkedInKey];
+                bool isCheckedOut = location[checkedOutKey];
                 locationDataList.add(LocationDataModel(
-                    index.toString(), locationTag, latLngString, isWorkedDone));
+                    index.toString(),
+                    locationTag,
+                    latLngString,
+                    isWorkedDone,
+                    isCheckedIn,
+                    isCheckedOut));
 
                 List<String> latLngList = latLngString.split(',');
                 double latitude = double.parse(latLngList[0]);
                 double longitude = double.parse(latLngList[1]);
+
+                if (isCheckedIn == true) {
+                  isSportCheckOutBtnEnable = true;
+                  isSportCheckInBtnEnable = false;
+                }
+
+                if (isCheckedOut == true) {
+                  isSportCheckInBtnEnable = true;
+                  isSportCheckOutBtnEnable = false;
+                }
 
                 if (destinationSet == false && isWorkedDone == false) {
                   destination = LatLng(latitude, longitude);
@@ -285,9 +306,9 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
               isSportCheckInBtnEnable = true;
             });
           } else {
-            setState(() {
-              isSportCheckInBtnEnable = true;
-            });
+            // setState(() {
+            //   isSportCheckInBtnEnable = true;
+            // });
             destination = null;
           }
         }
@@ -334,11 +355,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
         .update(userDataObject)
         .whenComplete(
       () {
-        setState(() {
-          isSportCheckInBtnEnable = false;
-          isSportCheckOutBtnEnable = true;
-        });
-        showSnackBar(context, checkedInSuccessMsg);
+        submitCheckedInStatus();
       },
     );
   }
@@ -354,9 +371,6 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
     if (sportIndex == locationDataList.length - 1) {
       await SharedPreferencesHelper.submitTime(dayCheckedOutTimeKey);
     }
-
-    Duration sportIdleTime = await LocationTrackingManager.getSportIdleTime();
-    print(sportIdleTime.inSeconds);
 
     markerList.add(Marker(
         markerId: MarkerId("markerId$sportIndex"),
@@ -385,6 +399,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
         .whenComplete(
       () {
         submitWorkDoneStatus();
+        submitIdleDurationStatus();
       },
     );
   }
@@ -410,6 +425,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
           sportIndex++;
           isSportCheckOutBtnEnable = false;
         }
+        isSportCheckedIn = false;
         showSnackBar(context, checkedOutSuccessMsg);
         setState(() {});
       },
@@ -450,7 +466,70 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
   }
 
   onSportActivity() async {
-    await SharedPreferencesHelper.submitTime(sportLastActivityTimeKey);
+    final value = await LocationTrackingManager.setSportIdleTime(
+        IdleTimeType.inSeconds, 10, sportIdleIndex);
+    if (value == true) {
+      setState(() {
+        // await SharedPreferencesHelper.submitTime(sportLastActivityTimeKey);
+        sportIdleIndex++;
+      });
+    }
     print("onSportActivitySubmitted");
+  }
+
+  submitIdleDurationStatus() async {
+    final idleSportDataMap = await LocationTrackingManager.getSportIdleTime();
+    DeviceInfo? deviceInfo = await getDeviceIdAndType();
+    String? deviceId = deviceInfo.deviceId;
+    String deviceType = deviceInfo.deviceType;
+    print(idleSportDataMap);
+
+    await database
+        .child(deviceType.toString())
+        .child(deviceId.toString())
+        .child(sportIndex.toString())
+        .child(idleDurationKey)
+        .set(idleSportDataMap)
+        .whenComplete(
+      () {
+        showSnackBar(context, "Idle Data Submitted Successfully!");
+      },
+    );
+  }
+
+  submitCheckedInStatus() async {
+    DeviceInfo? deviceInfo = await getDeviceIdAndType();
+    String? deviceId = deviceInfo.deviceId;
+    String deviceType = deviceInfo.deviceType;
+
+    await database
+        .child(deviceType.toString())
+        .child(deviceId.toString())
+        .child(sportIndex.toString())
+        .child(checkedInKey)
+        .set(true)
+        .whenComplete(
+      () {
+        setState(() {
+          isSportCheckInBtnEnable = false;
+          isSportCheckOutBtnEnable = true;
+          isSportCheckedIn = true;
+        });
+        showSnackBar(context, checkedInSuccessMsg);
+      },
+    );
+  }
+
+  submitCheckedOutStatus() async {
+    DeviceInfo? deviceInfo = await getDeviceIdAndType();
+    String? deviceId = deviceInfo.deviceId;
+    String deviceType = deviceInfo.deviceType;
+
+    await database
+        .child(deviceType.toString())
+        .child(deviceId.toString())
+        .child(sportIndex.toString())
+        .child(checkedOutKey)
+        .set(true);
   }
 }

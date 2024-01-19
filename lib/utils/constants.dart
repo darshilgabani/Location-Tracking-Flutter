@@ -36,5 +36,8 @@ const String checkedInSuccessMsg = "Checked In Successfully!";
 const String checkedOutSuccessMsg = "Checked Out Successfully!";
 const String sportCheckedInTimeKey = "Sport_Checked_In_Time";
 const String sportLastActivityTimeKey = "Sport_Last_Activity_Time";
-
+const String idleSportStringListKey = "Idle_Sport_String_List";
+const String idleDurationKey = "Idle_Duration";
+const String checkedInKey = "Checked_In";
+const String checkedOutKey = "Checked_Out";
 

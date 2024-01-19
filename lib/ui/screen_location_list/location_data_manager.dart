@@ -26,8 +26,15 @@ class LocationDataManager {
               String latLng = location['LatLng'];
               String locationTag = location[locationTagKey];
               bool isWorkedDone = location[workDoneKey];
-              locationDataList.add(
-                  LocationDataModel(index.toString(), locationTag, latLng,isWorkedDone));
+              bool isCheckedIn = location[checkedInKey];
+              bool isCheckedOut = location[checkedOutKey];
+              locationDataList.add(LocationDataModel(
+                  index.toString(),
+                  locationTag,
+                  latLng,
+                  isWorkedDone,
+                  isCheckedIn,
+                  isCheckedOut));
             });
           }
         });
@@ -98,11 +105,12 @@ class LocationDataManager {
       () {
         var currentLocationData = locationDataList.elementAt(index);
         var updatedLocationData = LocationDataModel(
-          currentLocationData.markerId,
-          updatedLocationTag,
-          currentLocationData.latLng,
-          currentLocationData.isWorkedDone
-        );
+            currentLocationData.markerId,
+            updatedLocationTag,
+            currentLocationData.latLng,
+            currentLocationData.isWorkedDone,
+            currentLocationData.isCheckedIn,
+            currentLocationData.isCheckedOut);
         locationDataList[index] = updatedLocationData;
         callback.call();
       },
