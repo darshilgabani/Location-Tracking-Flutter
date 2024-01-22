@@ -162,7 +162,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
     }
     String latLngString = "${latLng.latitude},${latLng.longitude}";
     locationDataList.add(
-        LocationDataModel(index.toString(), locationTag, latLngString, false));
+        LocationDataModel(index.toString(), locationTag, latLngString, false,false,false));
     setState(() {});
   }
 
@@ -222,10 +222,12 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
               final locations = value as List<dynamic>;
               locations.asMap().forEach((index, location) {
                 String latLngString = location['LatLng'];
-                String locationTag = location['Location_Tag'];
-                bool isWorkedDone = location['Worked_Done'];
+                String locationTag = location[locationTagKey];
+                bool isWorkedDone = location[workDoneKey];
+                bool isCheckedIn = location[checkedInKey];
+                bool isCheckedOut = location[checkedOutKey];
                 locationDataList.add(LocationDataModel(
-                    index.toString(), locationTag, latLngString, isWorkedDone));
+                    index.toString(), locationTag, latLngString, isWorkedDone,isCheckedIn,isCheckedOut));
 
                 List<String> latLngList = latLngString.split(',');
                 double latitude = double.parse(latLngList[0]);
