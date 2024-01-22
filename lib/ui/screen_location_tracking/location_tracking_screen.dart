@@ -45,15 +45,15 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
   int destinationLocationIndex = 0;
   int sportIndex = 0;
   bool destinationSet = false;
-  bool isSportCheckedIn = false;
   int sportIdleIndex = 0;
+  bool sportCheckedInStatus = false;
+  bool sportCheckedOutStatus = false;
 
   @override
   void initState() {
     super.initState();
     location.enableBackgroundMode(enable: true);
     getCurrentLocation();
-    SharedPreferencesHelper.submitTime(lastActivityTimeKey);
   }
 
   @override
@@ -83,9 +83,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                           width: 6)
                     },
                     onTap: (argument) {
-                      if (isSportCheckedIn == true) {
-                        onSportActivity();
-                      }
+                      onSportActivity();
                     },
                     onMapCreated: (controller) {
                       _controller.complete(controller);
@@ -183,14 +181,22 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                 double latitude = double.parse(latLngList[0]);
                 double longitude = double.parse(latLngList[1]);
 
-                if (isCheckedIn == true) {
-                  isSportCheckOutBtnEnable = true;
-                  isSportCheckInBtnEnable = false;
-                }
-
-                if (isCheckedOut == true) {
-                  isSportCheckInBtnEnable = true;
-                  isSportCheckOutBtnEnable = false;
+                if (sportIndex == index) {
+                  sportCheckedInStatus = isCheckedIn;
+                  sportCheckedOutStatus = isCheckedOut;
+                  if (sportCheckedInStatus == true &&
+                      sportCheckedOutStatus == false) {
+                    isSportCheckOutBtnEnable = true;
+                    isSportCheckInBtnEnable = false;
+                  } else if (sportCheckedInStatus == false &&
+                      sportCheckedOutStatus == false) {
+                    isSportCheckOutBtnEnable = false;
+                    isSportCheckInBtnEnable = false;
+                  } else if (sportCheckedInStatus == true &&
+                      sportCheckedOutStatus == true) {
+                    isSportCheckOutBtnEnable = false;
+                    isSportCheckInBtnEnable = false;
+                  }
                 }
 
                 if (destinationSet == false && isWorkedDone == false) {
@@ -302,13 +308,34 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
 
             polyline.addAll(remainPolyline);
 
-            setState(() {
+            if (sportCheckedInStatus == false &&
+                sportCheckedOutStatus == false) {
               isSportCheckInBtnEnable = true;
-            });
+              isSportCheckOutBtnEnable = false;
+            }else{
+              isSportCheckInBtnEnable = true;
+            }
+            setState(() {});
+          } else if (destinationLocationIndex == locationDataList.length - 1) {
+            if (sportCheckedInStatus == true &&
+                sportCheckedOutStatus == false) {
+              isSportCheckOutBtnEnable = true;
+              isSportCheckInBtnEnable = false;
+            } else if (sportCheckedInStatus == false &&
+                sportCheckedOutStatus == false) {
+              isSportCheckOutBtnEnable = false;
+              isSportCheckInBtnEnable = true;
+            } else if (sportCheckedInStatus == true &&
+                sportCheckedOutStatus == true) {
+              isSportCheckOutBtnEnable = false;
+              isSportCheckInBtnEnable = false;
+            } else {
+              isSportCheckInBtnEnable = true;
+            }
+            polyline.clear();
+            destination = null;
+            setState(() {});
           } else {
-            // setState(() {
-            //   isSportCheckInBtnEnable = true;
-            // });
             destination = null;
           }
         }
@@ -329,6 +356,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
   }
 
   onSportCheckInBtnClick() async {
+    SharedPreferencesHelper.submitTime(sportLastActivityTimeKey);
     final locationDataModel = locationDataList[sportIndex];
     String? locationTag = locationDataModel.locationTag;
 
@@ -413,6 +441,13 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
         .child(deviceType.toString())
         .child(deviceId.toString())
         .child(sportIndex.toString())
+        .child(checkedOutKey)
+        .set(true);
+
+    await database
+        .child(deviceType.toString())
+        .child(deviceId.toString())
+        .child(sportIndex.toString())
         .child(workDoneKey)
         .set(true)
         .whenComplete(
@@ -425,7 +460,6 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
           sportIndex++;
           isSportCheckOutBtnEnable = false;
         }
-        isSportCheckedIn = false;
         showSnackBar(context, checkedOutSuccessMsg);
         setState(() {});
       },
@@ -470,7 +504,6 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
         IdleTimeType.inSeconds, 10, sportIdleIndex);
     if (value == true) {
       setState(() {
-        // await SharedPreferencesHelper.submitTime(sportLastActivityTimeKey);
         sportIdleIndex++;
       });
     }
@@ -492,6 +525,8 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
         .set(idleSportDataMap)
         .whenComplete(
       () {
+        SharedPreferencesHelper.clearPrefs(idleSportStringListKey);
+        SharedPreferencesHelper.clearPrefs(sportLastActivityTimeKey);
         showSnackBar(context, "Idle Data Submitted Successfully!");
       },
     );
@@ -513,7 +548,6 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
         setState(() {
           isSportCheckInBtnEnable = false;
           isSportCheckOutBtnEnable = true;
-          isSportCheckedIn = true;
         });
         showSnackBar(context, checkedInSuccessMsg);
       },

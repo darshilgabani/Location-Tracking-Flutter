@@ -26,7 +26,6 @@ const String userDbChildKey = "User Database";
 const String userIdleDbChildKey = "User Idle Database";
 const String checkedInTimeKey = "Checked_In_Time";
 const String checkedOutTimeKey = "Checked_Out_Time";
-const String lastActivityTimeKey = "Last_Activity_Time";
 const String dayCheckedInTimeKey = "Day_Checked_In_Time";
 const String dayCheckedOutTimeKey = "Day_Checked_Out_Time";
 const String locationTagKey = "Location_Tag";
