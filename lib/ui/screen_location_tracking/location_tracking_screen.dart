@@ -13,7 +13,7 @@ import 'package:location_tracking_flutter/utils/custom/circular_progress.dart';
 import 'package:location_tracking_flutter/utils/custom/custom_btn.dart';
 import 'package:location_tracking_flutter/utils/helper.dart';
 import 'package:location_tracking_flutter/utils/theme.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:location_tracking_flutter/ui/screen_location_tracking/shared_preferences_helper.dart';
 
 class LocationTrackingScreen extends StatefulWidget {
   const LocationTrackingScreen({super.key});
@@ -43,6 +43,11 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
   bool isSportCheckOutBtnEnable = false;
   bool isLoading = false;
   int destinationLocationIndex = 0;
+  int sportIndex = 0;
+  bool destinationSet = false;
+  int sportIdleIndex = 0;
+  bool sportCheckedInStatus = false;
+  bool sportCheckedOutStatus = false;
 
   @override
   void initState() {
@@ -77,6 +82,9 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                           color: themeOrangeColor,
                           width: 6)
                     },
+                    onTap: (argument) {
+                      onSportActivity();
+                    },
                     onMapCreated: (controller) {
                       _controller.complete(controller);
                     },
@@ -101,7 +109,6 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                             isSportCheckInBtnEnable || isSportCheckOutBtnEnable,
                         isPaddingEnable: false,
                         callback: () {
-                          // onSportCheckInBtnClick();
                           if (isSportCheckInBtnEnable) {
                             onSportCheckInBtnClick();
                           } else if (isSportCheckOutBtnEnable) {
@@ -115,7 +122,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                         btnName: lblCheckoutBtn,
                         isBtnEnable: isCheckOutBtnEnable,
                         callback: () {
-                          onCheckOutBtnClick();
+                          submitGoodByeStatus();
                         },
                       ),
                     ),
@@ -158,37 +165,71 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
               final locations = value as List<dynamic>;
               locations.asMap().forEach((index, location) {
                 String latLngString = location['LatLng'];
-                String locationTag = location['Location_Tag'];
-                bool isWorkedDone = location['Worked_Done'];
+                String locationTag = location[locationTagKey];
+                bool isWorkedDone = location[workDoneKey];
+                bool isCheckedIn = location[checkedInKey];
+                bool isCheckedOut = location[checkedOutKey];
                 locationDataList.add(LocationDataModel(
-                    index.toString(), locationTag, latLngString,isWorkedDone));
+                    index.toString(),
+                    locationTag,
+                    latLngString,
+                    isWorkedDone,
+                    isCheckedIn,
+                    isCheckedOut));
 
                 List<String> latLngList = latLngString.split(',');
                 double latitude = double.parse(latLngList[0]);
                 double longitude = double.parse(latLngList[1]);
 
-                if (index == 0) {
-                  destination = LatLng(latitude, longitude);
-                  backgroundLocationService();
+                if (sportIndex == index) {
+                  sportCheckedInStatus = isCheckedIn;
+                  sportCheckedOutStatus = isCheckedOut;
+                  if (sportCheckedInStatus == true &&
+                      sportCheckedOutStatus == false) {
+                    isSportCheckOutBtnEnable = true;
+                    isSportCheckInBtnEnable = false;
+                  } else if (sportCheckedInStatus == false &&
+                      sportCheckedOutStatus == false) {
+                    isSportCheckOutBtnEnable = false;
+                    isSportCheckInBtnEnable = false;
+                  } else if (sportCheckedInStatus == true &&
+                      sportCheckedOutStatus == true) {
+                    isSportCheckOutBtnEnable = false;
+                    isSportCheckInBtnEnable = false;
+                  }
                 }
 
-                remainPolyline.insert(index, LatLng(latitude, longitude));
+                if (destinationSet == false && isWorkedDone == false) {
+                  destination = LatLng(latitude, longitude);
+                  backgroundLocationService();
+                  destinationSet = true;
+                } else if (isWorkedDone == true) {
+                  destinationLocationIndex++;
+                  sportIndex++;
+                }
+
+                if (isWorkedDone == false) {
+                  remainPolyline.add(LatLng(latitude, longitude));
+
+                  circleList.add(Circle(
+                      circleId: CircleId("circleId$index"),
+                      center: LatLng(latitude, longitude),
+                      radius: 100,
+                      fillColor: mapCircleFillColor,
+                      strokeColor: mapCircleStrokeColor,
+                      strokeWidth: 1));
+                }
                 polyline.addAll(remainPolyline);
 
                 markerList.add(Marker(
                     markerId: MarkerId("markerId$index"),
-                    icon: BitmapDescriptor.defaultMarkerWithHue(
-                        BitmapDescriptor.hueOrange),
+                    icon: isWorkedDone == true
+                        ? BitmapDescriptor.defaultMarkerWithHue(
+                            BitmapDescriptor.hueGreen)
+                        : BitmapDescriptor.defaultMarkerWithHue(
+                            BitmapDescriptor.hueOrange),
                     infoWindow: InfoWindow(title: locationTag),
                     position: LatLng(latitude, longitude)));
-
-                circleList.add(Circle(
-                    circleId: CircleId("circleId$index"),
-                    center: LatLng(latitude, longitude),
-                    radius: 100,
-                    fillColor: mapCircleFillColor,
-                    strokeColor: mapCircleStrokeColor,
-                    strokeWidth: 1));
               });
               setState(() {});
             }
@@ -206,6 +247,15 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
     });
   }
 
+  stopBackgroundLocationService() async {
+    final isBackgroundModeEnabled = await location.isBackgroundModeEnabled();
+    if (isBackgroundModeEnabled) {
+      location.enableBackgroundMode(enable: false);
+      locationSubscription?.cancel();
+      if (!mounted) return;
+    }
+  }
+
   updateMapAndPolyline(LocationData newLocation) async {
     GoogleMapController googleMapController = await _controller.future;
     googleMapController.animateCamera(CameraUpdate.newCameraPosition(
@@ -215,81 +265,108 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
 
     updateLiveLocation();
 
-    final distance = LocationTrackingManager().distanceBetweenCoordinates(
-        newLocation.latitude!,
-        newLocation.longitude!,
-        destination!.latitude,
-        destination!.longitude);
+    if (destination != null) {
+      final distance = LocationTrackingManager.distanceBetweenCoordinates(
+          newLocation.latitude!,
+          newLocation.longitude!,
+          destination!.latitude,
+          destination!.longitude);
 
-    print("Distance: $distance");
+      print("Distance: $distance");
 
-    if (distance <= 100) {
-      circleList.removeAt(0);
-
-      if (destinationLocationIndex < remainPolyline.length) {
-        final locationDataModel =
-            locationDataList.elementAt(destinationLocationIndex + 1);
-        print(locationDataModel);
-
-        String? latLngString = locationDataModel.latLng;
-        List<String> latLngList = latLngString!.split(',');
-        double latitude = double.parse(latLngList[0]);
-        double longitude = double.parse(latLngList[1]);
-
-        destination = LatLng(latitude, longitude);
-
-        polyline.clear();
-        polyline.insert(
-            0, LatLng(currentLocation!.latitude!, currentLocation!.longitude!));
-
-        if (destinationLocationIndex == 0) {
-          destinationLocationIndex++;
-          remainPolyline.removeAt(0);
-        } else {
-          remainPolyline.removeRange(0, destinationLocationIndex);
-          destinationLocationIndex++;
+      if (distance <= 100) {
+        if (circleList.isNotEmpty) {
+          circleList.removeAt(0);
         }
 
-        polyline.addAll(remainPolyline);
-      } else {
-        destinationLocationIndex++;
-        polyline.clear();
-      }
+        if (destinationLocationIndex < locationDataList.length) {
+          if (destinationLocationIndex != locationDataList.length - 1) {
+            final locationDataModel =
+                locationDataList.elementAt(destinationLocationIndex + 1);
+            print(locationDataModel);
 
-      setState(() {
-        isSportCheckInBtnEnable = true;
-      });
+            String? latLngString = locationDataModel.latLng;
+            List<String> latLngList = latLngString!.split(',');
+            double latitude = double.parse(latLngList[0]);
+            double longitude = double.parse(latLngList[1]);
+
+            destination = LatLng(latitude, longitude);
+
+            polyline.clear();
+            polyline.insert(
+                0,
+                LatLng(
+                    currentLocation!.latitude!, currentLocation!.longitude!));
+
+            if (destinationLocationIndex == 0) {
+              destinationLocationIndex++;
+              remainPolyline.removeAt(0);
+            } else {
+              remainPolyline.removeRange(0, destinationLocationIndex);
+              destinationLocationIndex++;
+            }
+
+            polyline.addAll(remainPolyline);
+
+            if (sportCheckedInStatus == false &&
+                sportCheckedOutStatus == false) {
+              isSportCheckInBtnEnable = true;
+              isSportCheckOutBtnEnable = false;
+            }else{
+              isSportCheckInBtnEnable = true;
+            }
+            setState(() {});
+          } else if (destinationLocationIndex == locationDataList.length - 1) {
+            if (sportCheckedInStatus == true &&
+                sportCheckedOutStatus == false) {
+              isSportCheckOutBtnEnable = true;
+              isSportCheckInBtnEnable = false;
+            } else if (sportCheckedInStatus == false &&
+                sportCheckedOutStatus == false) {
+              isSportCheckOutBtnEnable = false;
+              isSportCheckInBtnEnable = true;
+            } else if (sportCheckedInStatus == true &&
+                sportCheckedOutStatus == true) {
+              isSportCheckOutBtnEnable = false;
+              isSportCheckInBtnEnable = false;
+            } else {
+              isSportCheckInBtnEnable = true;
+            }
+            polyline.clear();
+            destination = null;
+            setState(() {});
+          } else {
+            destination = null;
+          }
+        }
+      }
     }
   }
 
   updateLiveLocation() {
     if (destination != null) {
-      polyline.removeAt(0);
-      polyline.insert(
-          0, LatLng(currentLocation!.latitude!, currentLocation!.longitude!));
-      setState(() {});
-    }
-  }
-
-  onCheckOutBtnClick() async {
-    final isBackgroundModeEnabled = await location.isBackgroundModeEnabled();
-    if (isBackgroundModeEnabled) {
-      location.enableBackgroundMode(enable: false);
-      locationSubscription?.cancel();
-      if (!mounted) return;
-      Navigator.pop(context);
+      if (polyline.isNotEmpty) {
+        polyline.removeAt(0);
+        polyline.insert(
+            0, LatLng(currentLocation!.latitude!, currentLocation!.longitude!));
+        if (!mounted) return;
+        setState(() {});
+      }
     }
   }
 
   onSportCheckInBtnClick() async {
-    var prefs = await SharedPreferences.getInstance();
-    final sportIndex = destinationLocationIndex - 1;
+    SharedPreferencesHelper.submitTime(sportLastActivityTimeKey);
     final locationDataModel = locationDataList[sportIndex];
     String? locationTag = locationDataModel.locationTag;
 
-    final checkedInTime = DateTime.now().microsecondsSinceEpoch;
+    if (sportIndex == 0) {
+      await SharedPreferencesHelper.submitTime(dayCheckedInTimeKey);
+    }
 
-    prefs.setInt(checkedInTimeKey, checkedInTime);
+    final checkedInTime = DateTime.now().microsecondsSinceEpoch;
+    await SharedPreferencesHelper.submitTime(checkedInTimeKey);
+    await SharedPreferencesHelper.submitTime(sportCheckedInTimeKey);
 
     Map<String, Object> userDataObject = {};
 
@@ -306,24 +383,22 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
         .update(userDataObject)
         .whenComplete(
       () {
-        setState(() {
-          isSportCheckInBtnEnable = false;
-          isSportCheckOutBtnEnable = true;
-        });
-        showSnackBar(context, checkedInSuccessMsg);
+        submitCheckedInStatus();
       },
     );
   }
 
   onSportCheckOutBtnClick() async {
-    var prefs = await SharedPreferences.getInstance();
-    final sportIndex = destinationLocationIndex - 1;
     final locationDataModel = locationDataList[sportIndex];
     String? latLngString = locationDataModel.latLng;
     String? locationTag = locationDataModel.locationTag;
     List<String> latLngList = latLngString!.split(',');
     double latitude = double.parse(latLngList[0]);
     double longitude = double.parse(latLngList[1]);
+
+    if (sportIndex == locationDataList.length - 1) {
+      await SharedPreferencesHelper.submitTime(dayCheckedOutTimeKey);
+    }
 
     markerList.add(Marker(
         markerId: MarkerId("markerId$sportIndex"),
@@ -334,13 +409,14 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
 
     Map<String, Object> userDataObject = {};
 
-    final checkInTime = prefs.getInt(checkedInTimeKey);
+    final checkInTime = await SharedPreferencesHelper.getTime(checkedInTimeKey);
     final checkOutTime = DateTime.now().microsecondsSinceEpoch;
-    final duration = getTotalDuration(checkOutTime, checkInTime!);
+    final duration =
+        LocationTrackingManager.getTotalDuration(checkOutTime, checkInTime!);
 
     userDataObject = {
       checkedOutTimeKey: checkOutTime,
-      durationKey: duration.toString(),
+      workDurationKey: duration.toString(),
     };
 
     await database
@@ -350,13 +426,13 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
         .update(userDataObject)
         .whenComplete(
       () {
-        submitWorkDoneStatus(sportIndex);
+        submitWorkDoneStatus();
+        submitIdleDurationStatus();
       },
     );
   }
 
-  submitWorkDoneStatus(int sportIndex) async {
-    var prefs = await SharedPreferences.getInstance();
+  submitWorkDoneStatus() async {
     DeviceInfo? deviceInfo = await getDeviceIdAndType();
     String? deviceId = deviceInfo.deviceId;
     String deviceType = deviceInfo.deviceType;
@@ -365,24 +441,129 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
         .child(deviceType.toString())
         .child(deviceId.toString())
         .child(sportIndex.toString())
-        .child("Worked_Done")
+        .child(checkedOutKey)
+        .set(true);
+
+    await database
+        .child(deviceType.toString())
+        .child(deviceId.toString())
+        .child(sportIndex.toString())
+        .child(workDoneKey)
         .set(true)
         .whenComplete(
       () {
-        prefs.clear();
         if (sportIndex == locationDataList.length - 1) {
           isCheckOutBtnEnable = true;
+          isSportCheckOutBtnEnable = false;
+          isSportCheckInBtnEnable = false;
+        } else {
+          sportIndex++;
+          isSportCheckOutBtnEnable = false;
         }
-        isSportCheckOutBtnEnable = false;
         showSnackBar(context, checkedOutSuccessMsg);
         setState(() {});
       },
     );
   }
 
-  Duration getTotalDuration(int time1, int time2) {
-    DateTime dateTime1 = DateTime.fromMillisecondsSinceEpoch(time1);
-    DateTime dateTime2 = DateTime.fromMillisecondsSinceEpoch(time2);
-    return dateTime1.difference(dateTime2);
+  submitGoodByeStatus() async {
+    final int? dayCheckedInTime =
+        await SharedPreferencesHelper.getTime(dayCheckedInTimeKey);
+    final int? dayCheckedOutTime =
+        await SharedPreferencesHelper.getTime(dayCheckedOutTimeKey);
+
+    final duration = LocationTrackingManager.getTotalDuration(
+        dayCheckedOutTime!, dayCheckedInTime!);
+
+    final object = {
+      deviceId!: {
+        dayCheckedInTimeKey: dayCheckedInTime,
+        dayCheckedOutTimeKey: dayCheckedOutTime,
+        workDurationKey: duration.toString(),
+      }
+    };
+
+    await database.child(userIdleDbChildKey).set(object).whenComplete(
+      () async {
+        final isBackgroundModeEnabled =
+            await location.isBackgroundModeEnabled();
+        if (isBackgroundModeEnabled) {
+          location.enableBackgroundMode(enable: false);
+          locationSubscription?.cancel();
+          if (!mounted) return;
+          Navigator.pop(context);
+        }
+      },
+    ).catchError((error) {
+      print("Error: $error");
+    });
+  }
+
+  onSportActivity() async {
+    final value = await LocationTrackingManager.setSportIdleTime(
+        IdleTimeType.inSeconds, 10, sportIdleIndex);
+    if (value == true) {
+      setState(() {
+        sportIdleIndex++;
+      });
+    }
+    print("onSportActivitySubmitted");
+  }
+
+  submitIdleDurationStatus() async {
+    final idleSportDataMap = await LocationTrackingManager.getSportIdleTime();
+    DeviceInfo? deviceInfo = await getDeviceIdAndType();
+    String? deviceId = deviceInfo.deviceId;
+    String deviceType = deviceInfo.deviceType;
+    print(idleSportDataMap);
+
+    await database
+        .child(deviceType.toString())
+        .child(deviceId.toString())
+        .child(sportIndex.toString())
+        .child(idleDurationKey)
+        .set(idleSportDataMap)
+        .whenComplete(
+      () {
+        SharedPreferencesHelper.clearPrefs(idleSportStringListKey);
+        SharedPreferencesHelper.clearPrefs(sportLastActivityTimeKey);
+        showSnackBar(context, "Idle Data Submitted Successfully!");
+      },
+    );
+  }
+
+  submitCheckedInStatus() async {
+    DeviceInfo? deviceInfo = await getDeviceIdAndType();
+    String? deviceId = deviceInfo.deviceId;
+    String deviceType = deviceInfo.deviceType;
+
+    await database
+        .child(deviceType.toString())
+        .child(deviceId.toString())
+        .child(sportIndex.toString())
+        .child(checkedInKey)
+        .set(true)
+        .whenComplete(
+      () {
+        setState(() {
+          isSportCheckInBtnEnable = false;
+          isSportCheckOutBtnEnable = true;
+        });
+        showSnackBar(context, checkedInSuccessMsg);
+      },
+    );
+  }
+
+  submitCheckedOutStatus() async {
+    DeviceInfo? deviceInfo = await getDeviceIdAndType();
+    String? deviceId = deviceInfo.deviceId;
+    String deviceType = deviceInfo.deviceType;
+
+    await database
+        .child(deviceType.toString())
+        .child(deviceId.toString())
+        .child(sportIndex.toString())
+        .child(checkedOutKey)
+        .set(true);
   }
 }

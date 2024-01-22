@@ -1,6 +1,7 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:location_tracking_flutter/model/model_device_info.dart';
 import 'package:location_tracking_flutter/model/model_location_data.dart';
+import 'package:location_tracking_flutter/utils/constants.dart';
 import 'package:location_tracking_flutter/utils/helper.dart';
 
 class LocationDataManager {
@@ -23,10 +24,17 @@ class LocationDataManager {
             final locations = value as List<dynamic>;
             locations.asMap().forEach((index, location) {
               String latLng = location['LatLng'];
-              String locationTag = location['Location_Tag'];
-              bool isWorkedDone = location['Worked_Done'];
+              String locationTag = location[locationTagKey];
+              bool isWorkedDone = location[workDoneKey];
+              bool isCheckedIn = location[checkedInKey];
+              bool isCheckedOut = location[checkedOutKey];
               locationDataList.add(LocationDataModel(
-                  index.toString(), locationTag, latLng, isWorkedDone));
+                  index.toString(),
+                  locationTag,
+                  latLng,
+                  isWorkedDone,
+                  isCheckedIn,
+                  isCheckedOut));
             });
           }
         });
@@ -97,11 +105,12 @@ class LocationDataManager {
       () {
         var currentLocationData = locationDataList.elementAt(index);
         var updatedLocationData = LocationDataModel(
-          currentLocationData.markerId,
-          updatedLocationTag,
-          currentLocationData.latLng,
-          currentLocationData.isWorkedDone
-        );
+            currentLocationData.markerId,
+            updatedLocationTag,
+            currentLocationData.latLng,
+            currentLocationData.isWorkedDone,
+            currentLocationData.isCheckedIn,
+            currentLocationData.isCheckedOut);
         locationDataList[index] = updatedLocationData;
         callback.call();
       },
