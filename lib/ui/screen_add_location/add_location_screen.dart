@@ -54,14 +54,14 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
             currentLocation == null || initialCameraPosition == null
                 ? CircularProgress()
                 : GoogleMap(
-                    initialCameraPosition: initialCameraPosition!,
-                    myLocationEnabled: true,
-                    myLocationButtonEnabled: false,
-                    onTap: (latLng) {
-                      showAddLocationDialog(latLng);
-                    },
-                    markers: Set<Marker>.of(markerList),
-                  ),
+              initialCameraPosition: initialCameraPosition!,
+              myLocationEnabled: true,
+              myLocationButtonEnabled: false,
+              onTap: (latLng) {
+                showAddLocationDialog(latLng);
+              },
+              markers: Set<Marker>.of(markerList),
+            ),
             Positioned(
                 bottom: 15,
                 left: 15,
@@ -106,7 +106,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
             decoration: InputDecoration(
               hintText: addDialogHintText,
               contentPadding:
-                  EdgeInsets.symmetric(horizontal: 10, vertical: 20),
+              EdgeInsets.symmetric(horizontal: 10, vertical: 20),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10.0),
                 borderSide: BorderSide(color: themeDarkOrangeColor, width: 2),
@@ -177,8 +177,10 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
       for (var item in locationDataList) {
         var object = {
           "LatLng": item.latLng,
-          "Location_Tag": item.locationTag,
-          "Worked_Done": item.isWorkedDone,
+          locationTagKey: item.locationTag,
+          workDoneKey: item.isWorkedDone,
+          checkedInKey: item.isCheckedIn,
+          checkedOutKey: item.isCheckedOut,
         };
         locationDataObject[item.markerId!] = object;
       }
@@ -192,7 +194,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
             .child(deviceId.toString())
             .update(locationDataObject)
             .whenComplete(
-          () {
+              () {
             setState(() {
               isLoading = false;
             });
@@ -208,7 +210,7 @@ class _AddLocationScreenState extends State<AddLocationScreen> {
 
   getLocationData() {
     database.once().then(
-      (event) async {
+          (event) async {
         final data = event.snapshot.value as Map;
         DeviceInfo deviceInfo = await getDeviceIdAndType();
         String deviceType = deviceInfo.deviceType;
