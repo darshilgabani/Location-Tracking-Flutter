@@ -9,6 +9,7 @@ class CustomButton extends StatelessWidget {
   final bool isBtnEnable;
   final bool isPaddingEnable;
   final double width;
+  final double fontSize;
   final VoidCallback? callback;
 
   const CustomButton(
@@ -20,6 +21,7 @@ class CustomButton extends StatelessWidget {
       this.isBtnEnable = true,
       this.isPaddingEnable = true,
       this.width = double.infinity,
+      this.fontSize = 17,
       this.textColor = textWhiteColor});
 
   @override
@@ -41,7 +43,7 @@ class CustomButton extends StatelessWidget {
                 },
                 child: Text(
                   btnName,
-                  style: TextStyle(color: textColor, fontSize: 17),
+                  style: TextStyle(color: textColor, fontSize: fontSize),
                 ),
               ),
             ),
@@ -62,7 +64,7 @@ class CustomButton extends StatelessWidget {
                           borderRadius: BorderRadius.circular(15)))),
                   child: Text(
                     disableBtnText != "" ? disableBtnText : btnName,
-                    style: TextStyle(color: disableBtnTextColor, fontSize: 17),
+                    style: TextStyle(color: disableBtnTextColor, fontSize: fontSize),
                   )),
             ),
           );

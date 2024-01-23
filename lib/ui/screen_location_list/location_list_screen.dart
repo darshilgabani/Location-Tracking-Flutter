@@ -28,14 +28,7 @@ class _LocationListScreenState extends State<LocationListScreen> {
   @override
   void initState() {
     super.initState();
-    locationDataManager.getLocationData().then(
-      (value) {
-        setState(() {
-          locationDataList.clear();
-          locationDataList.addAll(value);
-        });
-      },
-    );
+    fetchLocationData();
   }
 
   @override
@@ -190,13 +183,6 @@ class _LocationListScreenState extends State<LocationListScreen> {
 
   showUpdateDeleteLocationDialog(
       LocationDataModel locationDataModel, int index) {
-    final elevatedButtonStyle = ElevatedButton.styleFrom(
-      backgroundColor: themeOrangeColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-    );
-
-    final textStyle = TextStyle(color: themeWhiteColor);
-
     _textEditingController.text = locationDataModel.locationTag!;
 
     showDialog(
@@ -227,63 +213,63 @@ class _LocationListScreenState extends State<LocationListScreen> {
           ),
           actions: <Widget>[
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: ElevatedButton(
-                      style: elevatedButtonStyle,
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: Text(
-                        updateDeleteDialogCancelBtn,
-                        style: textStyle,
-                      )),
+                  child: CustomButton(
+                    btnName: updateDeleteDialogCancelBtn,
+                    isPaddingEnable: false,
+                    fontSize: 13,
+                    callback: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
                 ),
-                SizedBox(width: 8),
+                SizedBox(
+                  width: 5,
+                ),
                 Expanded(
-                  child: ElevatedButton(
-                      style: elevatedButtonStyle,
-                      onPressed: () {
-                        locationDataManager.deleteLocationData(
-                          locationDataModel,
+                  child: CustomButton(
+                    btnName: updateDeleteDialogDeleteBtn,
+                    isPaddingEnable: false,
+                    fontSize: 13,
+                    callback: () {
+                      locationDataManager.deleteLocationData(
+                        locationDataModel,
+                        locationDataList,
+                        index,
+                            () {
+                          Navigator.of(context).pop();
+                          setState(() {});
+                        },
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(
+                  width: 5,
+                ),
+                Expanded(
+                  child: CustomButton(
+                    btnName: updateDeleteDialogUpdateBtn,
+                    isPaddingEnable: false,
+                    fontSize: 13,
+                    callback: () {
+                      String updatedLocationTag = _textEditingController.text;
+                      if (updatedLocationTag != "") {
+                        locationDataManager.updateLocationTagName(
                           locationDataList,
+                          updatedLocationTag,
                           index,
-                          () {
+                              () {
                             Navigator.of(context).pop();
                             setState(() {});
                           },
                         );
-                      },
-                      child: Text(
-                        updateDeleteDialogDeleteBtn,
-                        style: textStyle,
-                      )),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                      style: elevatedButtonStyle,
-                      onPressed: () {
-                        String updatedLocationTag = _textEditingController.text;
-                        if (updatedLocationTag != "") {
-                          locationDataManager.updateLocationTagName(
-                            locationDataList,
-                            updatedLocationTag,
-                            index,
-                            () {
-                              Navigator.of(context).pop();
-                              setState(() {});
-                            },
-                          );
-                        } else {
-                          showSnackBar(context, updateDeleteDialogEmptyTextError);
-                        }
-                      },
-                      child: Text(
-                        updateDeleteDialogUpdateBtn,
-                        style: textStyle,
-                      )),
+                      } else {
+                        showSnackBar(context, updateDeleteDialogEmptyTextError);
+                      }
+                    },
+                  ),
                 ),
               ],
             )
@@ -305,5 +291,16 @@ class _LocationListScreenState extends State<LocationListScreen> {
       openAppSettings();
     }
     return isGranted;
+  }
+
+  Future<void> fetchLocationData() async {
+    await locationDataManager.getLocationData();
+
+    locationDataManager.locationDataStream.listen((list) {
+      setState(() {
+        locationDataList.clear();
+        locationDataList.addAll(list);
+      });
+    });
   }
 }
