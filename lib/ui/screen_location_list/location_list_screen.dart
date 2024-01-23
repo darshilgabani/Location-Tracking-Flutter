@@ -31,6 +31,7 @@ class _LocationListScreenState extends State<LocationListScreen> {
     locationDataManager.getLocationData().then(
       (value) {
         setState(() {
+          locationDataList.clear();
           locationDataList.addAll(value);
         });
       },

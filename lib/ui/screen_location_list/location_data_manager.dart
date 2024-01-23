@@ -11,34 +11,35 @@ class LocationDataManager {
     List<LocationDataModel> locationDataList = [];
 
     try {
-      var event = await database.once();
-      final data = event.snapshot.value as Map;
-      DeviceInfo deviceInfo = await getDeviceIdAndType();
-      String deviceType = deviceInfo.deviceType;
-      String? deviceId = deviceInfo.deviceId;
+      database.onValue.listen((event) async {
+        final data = event.snapshot.value as Map;
+        DeviceInfo deviceInfo = await getDeviceIdAndType();
+        String deviceType = deviceInfo.deviceType;
+        String? deviceId = deviceInfo.deviceId;
 
-      if (deviceType != 'Unknown' && deviceId != null) {
-        final userLocationData = data[deviceType] as Map<dynamic, dynamic>;
-        userLocationData.forEach((key, value) {
-          if (key == deviceId) {
-            final locations = value as List<dynamic>;
-            locations.asMap().forEach((index, location) {
-              String latLng = location['LatLng'];
-              String locationTag = location[locationTagKey];
-              bool isWorkedDone = location[workDoneKey];
-              bool isCheckedIn = location[checkedInKey];
-              bool isCheckedOut = location[checkedOutKey];
-              locationDataList.add(LocationDataModel(
-                  index.toString(),
-                  locationTag,
-                  latLng,
-                  isWorkedDone,
-                  isCheckedIn,
-                  isCheckedOut));
-            });
-          }
-        });
-      }
+        if (deviceType != 'Unknown' && deviceId != null) {
+          final userLocationData = data[deviceType] as Map<dynamic, dynamic>;
+          userLocationData.forEach((key, value) {
+            if (key == deviceId) {
+              final locations = value as List<dynamic>;
+              locations.asMap().forEach((index, location) {
+                String latLng = location['LatLng'];
+                String locationTag = location[locationTagKey];
+                bool isWorkedDone = location[workDoneKey];
+                bool isCheckedIn = location[checkedInKey];
+                bool isCheckedOut = location[checkedOutKey];
+                locationDataList.add(LocationDataModel(
+                    index.toString(),
+                    locationTag,
+                    latLng,
+                    isWorkedDone,
+                    isCheckedIn,
+                    isCheckedOut));
+              });
+            }
+          });
+        }
+      });
     } catch (e) {
       print('Error fetching location data: $e');
     }
