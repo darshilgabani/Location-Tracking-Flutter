@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_database/firebase_database.dart';
 import 'package:location_tracking_flutter/model/model_device_info.dart';
 import 'package:location_tracking_flutter/model/model_location_data.dart';
@@ -7,11 +9,18 @@ import 'package:location_tracking_flutter/utils/helper.dart';
 class LocationDataManager {
   final DatabaseReference database = FirebaseDatabase.instance.ref();
 
-  Future<List<LocationDataModel>> getLocationData() async {
-    List<LocationDataModel> locationDataList = [];
+  final StreamController<List<LocationDataModel>> _locationDataController =
+  StreamController<List<LocationDataModel>>();
+  Stream<List<LocationDataModel>> get locationDataStream =>
+      _locationDataController.stream;
 
+  List<LocationDataModel> locationDataList = [];
+
+  Future<void> getLocationData() async {
+    List<LocationDataModel> locationList = [];
     try {
       database.onValue.listen((event) async {
+        locationList.clear();
         final data = event.snapshot.value as Map;
         DeviceInfo deviceInfo = await getDeviceIdAndType();
         String deviceType = deviceInfo.deviceType;
@@ -28,7 +37,7 @@ class LocationDataManager {
                 bool isWorkedDone = location[workDoneKey];
                 bool isCheckedIn = location[checkedInKey];
                 bool isCheckedOut = location[checkedOutKey];
-                locationDataList.add(LocationDataModel(
+                locationList.add(LocationDataModel(
                     index.toString(),
                     locationTag,
                     latLng,
@@ -38,13 +47,14 @@ class LocationDataManager {
               });
             }
           });
+          locationDataList.clear();
+          locationDataList.addAll(locationList);
+          _locationDataController.add(locationDataList);
         }
       });
     } catch (e) {
       print('Error fetching location data: $e');
     }
-
-    return locationDataList;
   }
 
   Future<void> deleteLocationData(
@@ -69,7 +79,10 @@ class LocationDataManager {
         var item = locationDataNewList[i];
         var object = {
           "LatLng": item.latLng,
-          "Location_Tag": item.locationTag,
+          locationTagKey: item.locationTag,
+          workDoneKey: item.isWorkedDone,
+          checkedInKey: item.isCheckedIn,
+          checkedOutKey: item.isCheckedOut,
         };
         locationDataObject[i.toString()] = object;
       }
@@ -137,7 +150,10 @@ class LocationDataManager {
       var item = locationDataNewList[i];
       var object = {
         "LatLng": item.latLng,
-        "Location_Tag": item.locationTag,
+        locationTagKey: item.locationTag,
+        workDoneKey: item.isWorkedDone,
+        checkedInKey: item.isCheckedIn,
+        checkedOutKey: item.isCheckedOut,
       };
       locationDataObject[i.toString()] = object;
     }
