@@ -14,3 +14,8 @@ const String updateDeleteDialogCancelBtn = "Cancel";
 const String updateDeleteDialogUpdateBtn = "Update";
 const String updateDeleteDialogDeleteBtn = "Delete";
 const String updateDeleteDialogEmptyTextError = "Please Enter location tag!";
+
+const String locationTagKey = "Location_Tag";
+const String workDoneKey = "Worked_Done";
+const String checkedInKey = "Checked_In";
+const String checkedOutKey = "Checked_Out";
