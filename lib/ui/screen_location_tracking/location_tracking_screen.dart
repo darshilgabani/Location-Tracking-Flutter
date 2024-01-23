@@ -208,9 +208,9 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                   sportIndex++;
                 }
 
-                if (isWorkedDone == false) {
-                  remainPolyline.add(LatLng(latitude, longitude));
+                remainPolyline.add(LatLng(latitude, longitude));
 
+                if (isWorkedDone == false) {
                   circleList.add(Circle(
                       circleId: CircleId("circleId$index"),
                       center: LatLng(latitude, longitude),
@@ -312,7 +312,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                 sportCheckedOutStatus == false) {
               isSportCheckInBtnEnable = true;
               isSportCheckOutBtnEnable = false;
-            }else{
+            } else {
               isSportCheckInBtnEnable = true;
             }
             setState(() {});
