@@ -47,4 +47,3 @@ const String idleSportStringListKey = "Idle_Sport_String_List";
 const String idleDurationKey = "Idle_Duration";
 const String checkedInKey = "Checked_In";
 const String checkedOutKey = "Checked_Out";
-
