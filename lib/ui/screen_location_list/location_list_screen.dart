@@ -143,43 +143,46 @@ class _LocationListScreenState extends State<LocationListScreen> {
             Expanded(
                 child: locationDataList.isNotEmpty
                     ? ReorderableListView(
-                  padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
-                  proxyDecorator: proxyDecorator,
-                  children: cards,
-                  onReorder: (oldIndex, newIndex) {
-                    setState(() {
-                      if (oldIndex < newIndex) {
-                        newIndex -= 1;
-                      }
-                      final LocationDataModel item =
-                      locationDataList.removeAt(oldIndex);
-                      locationDataList.insert(newIndex, item);
-                    });
-                    locationDataManager.updateDraggedCardIndex(
-                      locationDataList,
-                          () {
-                        setState(() {});
-                      },
-                    );
-                  },
-                )
+                        padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
+                        proxyDecorator: proxyDecorator,
+                        children: cards,
+                        onReorder: (oldIndex, newIndex) {
+                          setState(() {
+                            if (oldIndex < newIndex) {
+                              newIndex -= 1;
+                            }
+                            final LocationDataModel item =
+                                locationDataList.removeAt(oldIndex);
+                            locationDataList.insert(newIndex, item);
+                          });
+                          locationDataManager.updateDraggedCardIndex(
+                            locationDataList,
+                            () {
+                              setState(() {});
+                            },
+                          );
+                        },
+                      )
                     : Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(18.0),
-                      child: Text(
-                        emptyLocationDataListMsg,
-                        style: TextStyle(
-                            color: themeOrangeColor,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ))),
+                        child: Padding(
+                        padding: const EdgeInsets.all(18.0),
+                        child: Text(
+                          emptyLocationDataListMsg,
+                          style: TextStyle(
+                              color: themeOrangeColor,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ))),
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
                 padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
                 child: CustomButton(
-                  btnName: lblStartBtn,
+                  btnName: trackingBtnName.isNotEmpty
+                      ? trackingBtnName
+                      : getTrackingBtnName(),
+                  isBtnEnable: isTrackingBtnEnable || isResumeBtnEnable,
                   callback: () {
                     checkLocationPermission(
                       context,

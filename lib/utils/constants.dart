@@ -3,6 +3,8 @@ const String titleAddLocationScreen = "Add Location";
 const String titleLocationTrackingScreen = "Location Tracking";
 
 const String lblStartBtn = "Start Tracking";
+const String lblResumeBtn = "Resume Tracking";
+const String lblWorkCompletedBtn = "Work has been already submitted";
 const String lblAddBtn = "Add";
 const String lblCheckoutBtn = "Check out";
 const String lblSportCheckInBtn = "Sport CheckIn";
@@ -47,3 +49,6 @@ const String idleSportStringListKey = "Idle_Sport_String_List";
 const String idleDurationKey = "Idle_Duration";
 const String checkedInKey = "Checked_In";
 const String checkedOutKey = "Checked_Out";
+
+const String emptyLocationDataListMsg =
+    "Location data not detected; please navigate to the Add Location screen by clicking + at the top and input the location.";
