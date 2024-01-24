@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:location_tracking_flutter/utils/colors.dart';
 import 'package:location_tracking_flutter/utils/constants.dart';
-import 'package:location_tracking_flutter/utils/custom/circular_progress.dart';
 import 'package:location_tracking_flutter/utils/custom/custom_btn.dart';
 import 'package:location_tracking_flutter/utils/helper.dart';
 import 'package:location_tracking_flutter/utils/theme.dart';
@@ -12,6 +11,7 @@ import 'package:location_tracking_flutter/model/model_location_data.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:location_tracking_flutter/ui/screen_add_location/add_location_screen.dart';
 import 'package:location_tracking_flutter/ui/screen_location_tracking/location_tracking_screen.dart';
+import 'package:location_tracking_flutter/utils/custom/circular_progress.dart';
 
 class LocationListScreen extends StatefulWidget {
   const LocationListScreen({super.key});
@@ -147,37 +147,37 @@ class _LocationListScreenState extends State<LocationListScreen> {
             Expanded(
                 child: locationDataList.isNotEmpty
                     ? ReorderableListView(
-                  padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
-                  proxyDecorator: proxyDecorator,
-                  children: cards,
-                  onReorder: (oldIndex, newIndex) {
-                    setState(() {
-                      if (oldIndex < newIndex) {
-                        newIndex -= 1;
-                      }
-                      final LocationDataModel item =
-                      locationDataList.removeAt(oldIndex);
-                      locationDataList.insert(newIndex, item);
-                    });
-                    locationDataManager.updateDraggedCardIndex(
-                      locationDataList,
-                          () {
-                        setState(() {});
-                      },
-                    );
-                  },
-                )
+                        padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
+                        proxyDecorator: proxyDecorator,
+                        children: cards,
+                        onReorder: (oldIndex, newIndex) {
+                          setState(() {
+                            if (oldIndex < newIndex) {
+                              newIndex -= 1;
+                            }
+                            final LocationDataModel item =
+                                locationDataList.removeAt(oldIndex);
+                            locationDataList.insert(newIndex, item);
+                          });
+                          locationDataManager.updateDraggedCardIndex(
+                            locationDataList,
+                            () {
+                              setState(() {});
+                            },
+                          );
+                        },
+                      )
                     : Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(18.0),
-                      child: Text(
-                        emptyLocationDataListMsg,
-                        style: TextStyle(
-                            color: themeOrangeColor,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ))),
+                        child: Padding(
+                        padding: const EdgeInsets.all(18.0),
+                        child: Text(
+                          emptyLocationDataListMsg,
+                          style: TextStyle(
+                              color: themeOrangeColor,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ))),
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
@@ -339,8 +339,8 @@ class _LocationListScreenState extends State<LocationListScreen> {
             isResumeBtnEnable = false;
             trackingBtnName = lblWorkCompletedBtn;
           }
-          isLoading = false;
         }
+        isLoading = false;
       });
     });
   }
