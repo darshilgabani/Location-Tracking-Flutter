@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:location_tracking_flutter/ui/screen_location_list/location_data_manager.dart';
 import 'package:location_tracking_flutter/model/model_location_data.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:location_tracking_flutter/utils/custom/circular_progress.dart';
 
 class LocationListScreen extends StatefulWidget {
   const LocationListScreen({super.key});
@@ -27,6 +28,7 @@ class _LocationListScreenState extends State<LocationListScreen> {
   bool isResumeBtnEnable = false;
   bool isWorkCompleted = false;
   String trackingBtnName = "";
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -135,7 +137,9 @@ class _LocationListScreenState extends State<LocationListScreen> {
           )
         ],
       ),
-      body: SafeArea(
+      body: isLoading == true?
+      CircularProgress() :
+      SafeArea(
         child: Column(
           children: [
             Expanded(
@@ -325,6 +329,7 @@ class _LocationListScreenState extends State<LocationListScreen> {
             isResumeBtnEnable = false;
             trackingBtnName = lblWorkCompletedBtn;
           }
+          isLoading = false;
         }
       });
     });
