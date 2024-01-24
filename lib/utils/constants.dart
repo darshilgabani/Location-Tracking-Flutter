@@ -19,3 +19,8 @@ const String locationTagKey = "Location_Tag";
 const String workDoneKey = "Worked_Done";
 const String checkedInKey = "Checked_In";
 const String checkedOutKey = "Checked_Out";
+
+const String lblResumeBtn = "Resume Tracking";
+const String lblWorkCompletedBtn = "Work has been already submitted";
+const String emptyLocationDataListMsg =
+    "Location data not detected; please navigate to the Add Location screen by clicking + at the top and input the location.";

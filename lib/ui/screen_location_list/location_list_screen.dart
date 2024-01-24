@@ -23,6 +23,11 @@ class _LocationListScreenState extends State<LocationListScreen> {
   List<LocationDataModel> locationDataList = [];
   LocationDataManager locationDataManager = LocationDataManager();
 
+  bool isTrackingBtnEnable = false;
+  bool isResumeBtnEnable = false;
+  bool isWorkCompleted = false;
+  String trackingBtnName = "";
+
   @override
   void initState() {
     super.initState();
@@ -134,33 +139,49 @@ class _LocationListScreenState extends State<LocationListScreen> {
         child: Column(
           children: [
             Expanded(
-              child: ReorderableListView(
-                padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
-                proxyDecorator: proxyDecorator,
-                children: cards,
-                onReorder: (oldIndex, newIndex) {
-                  setState(() {
-                    if (oldIndex < newIndex) {
-                      newIndex -= 1;
-                    }
-                    final LocationDataModel item =
-                        locationDataList.removeAt(oldIndex);
-                    locationDataList.insert(newIndex, item);
-                  });
-                  locationDataManager.updateDraggedCardIndex(
-                    locationDataList,
-                    () {
-                      setState(() {});
-                    },
-                  );
-                },
-              ),
-            ),
+                child: locationDataList.isNotEmpty
+                    ? ReorderableListView(
+                  padding: const EdgeInsets.fromLTRB(15, 15, 15, 0),
+                  proxyDecorator: proxyDecorator,
+                  children: cards,
+                  onReorder: (oldIndex, newIndex) {
+                    setState(() {
+                      if (oldIndex < newIndex) {
+                        newIndex -= 1;
+                      }
+                      final LocationDataModel item =
+                      locationDataList.removeAt(oldIndex);
+                      locationDataList.insert(newIndex, item);
+                    });
+                    locationDataManager.updateDraggedCardIndex(
+                      locationDataList,
+                          () {
+                        setState(() {});
+                      },
+                    );
+                  },
+                )
+                    : Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(18.0),
+                      child: Text(
+                        emptyLocationDataListMsg,
+                        style: TextStyle(
+                            color: themeOrangeColor,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ))),
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
                 padding: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                child: CustomButton(btnName: lblStartBtn),
+                child: CustomButton(
+                  btnName: trackingBtnName.isNotEmpty
+                      ? trackingBtnName
+                      : getTrackingBtnName(),
+                  isBtnEnable: isTrackingBtnEnable || isResumeBtnEnable,
+                ),
               ),
             ),
           ],
@@ -288,7 +309,28 @@ class _LocationListScreenState extends State<LocationListScreen> {
       setState(() {
         locationDataList.clear();
         locationDataList.addAll(list);
+        trackingBtnName = "";
+        for (final (index, element) in locationDataList.indexed) {
+          if (index == 0 && element.isWorkedDone == false) {
+            isTrackingBtnEnable = true;
+            isResumeBtnEnable = false;
+          } else if (index == 0 && element.isWorkedDone == true) {
+            isTrackingBtnEnable = false;
+            isResumeBtnEnable = true;
+          }
+
+          if (index == (locationDataList.length - 1) &&
+              element.isWorkedDone == true) {
+            isTrackingBtnEnable = false;
+            isResumeBtnEnable = false;
+            trackingBtnName = lblWorkCompletedBtn;
+          }
+        }
       });
     });
+  }
+
+  String getTrackingBtnName() {
+    return isTrackingBtnEnable ? lblStartBtn : lblResumeBtn;
   }
 }
