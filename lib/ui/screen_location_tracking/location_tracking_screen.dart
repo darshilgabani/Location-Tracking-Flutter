@@ -57,6 +57,15 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
   }
 
   @override
+  void dispose() {
+    final locationSubscription = this.locationSubscription;
+    if (locationSubscription != null) {
+      locationSubscription.cancel();
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
@@ -218,8 +227,8 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
                       fillColor: mapCircleFillColor,
                       strokeColor: mapCircleStrokeColor,
                       strokeWidth: 1));
+                  polyline.add(LatLng(latitude, longitude));
                 }
-                polyline.addAll(remainPolyline);
 
                 markerList.add(Marker(
                     markerId: MarkerId("markerId$index"),
@@ -257,11 +266,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
   }
 
   updateMapAndPolyline(LocationData newLocation) async {
-    GoogleMapController googleMapController = await _controller.future;
-    googleMapController.animateCamera(CameraUpdate.newCameraPosition(
-        CameraPosition(
-            target: LatLng(newLocation.latitude!, newLocation.longitude!),
-            zoom: 16)));
+    animateTo(newLocation.latitude!, newLocation.longitude!);
 
     updateLiveLocation();
 
@@ -302,18 +307,24 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
               destinationLocationIndex++;
               remainPolyline.removeAt(0);
             } else {
-              remainPolyline.removeRange(0, destinationLocationIndex);
+              remainPolyline.removeAt(0);
               destinationLocationIndex++;
             }
 
             polyline.addAll(remainPolyline);
 
-            if (sportCheckedInStatus == false &&
+            if (sportCheckedInStatus == true &&
+                sportCheckedOutStatus == false) {
+              isSportCheckOutBtnEnable = true;
+              isSportCheckInBtnEnable = false;
+            } else if (sportCheckedInStatus == false &&
                 sportCheckedOutStatus == false) {
               isSportCheckInBtnEnable = true;
               isSportCheckOutBtnEnable = false;
-            }else{
-              isSportCheckInBtnEnable = true;
+            } else {
+              if (locationDataModel.isCheckedIn != true) {
+                isSportCheckInBtnEnable = true;
+              }
             }
             setState(() {});
           } else if (destinationLocationIndex == locationDataList.length - 1) {
@@ -355,6 +366,17 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
     }
   }
 
+  Future<void> animateTo(double lat, double lng) async {
+    try {
+      final googleMapController = await _controller.future;
+      final cameraPosition = CameraPosition(target: LatLng(lat, lng), zoom: 16);
+      googleMapController
+          .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+    } catch (error) {
+      print("AnimateTo Error: $error");
+    }
+  }
+
   onSportCheckInBtnClick() async {
     SharedPreferencesHelper.submitTime(sportLastActivityTimeKey);
     final locationDataModel = locationDataList[sportIndex];
@@ -367,6 +389,7 @@ class _LocationTrackingScreenState extends State<LocationTrackingScreen> {
     final checkedInTime = DateTime.now().microsecondsSinceEpoch;
     await SharedPreferencesHelper.submitTime(checkedInTimeKey);
     await SharedPreferencesHelper.submitTime(sportCheckedInTimeKey);
+    await SharedPreferencesHelper.submitTime(sportLastActivityTimeKey);
 
     Map<String, Object> userDataObject = {};
 
